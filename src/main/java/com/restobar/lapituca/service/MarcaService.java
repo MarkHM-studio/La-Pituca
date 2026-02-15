@@ -14,25 +14,27 @@ public class MarcaService {
 
     private final MarcaRepository marcaRepository;
 
-    public Marca crearMarca(Marca marca){
+    public Marca guardar(Marca marca){
         return marcaRepository.save(marca);
     }
 
-    public List<Marca> obtenerMarcas(){
+    public List<Marca> listarTodos(){
         return marcaRepository.findAll();
     }
 
-    public Marca obtenerMarcaId(Long id) {
-        return marcaRepository.findById(id).orElseThrow(() -> new MarcaNotFoundException("Marca no encontrada"));
+    public Marca obtenerPorId(Long id) {
+        return marcaRepository.findById(id).orElseThrow(()
+                -> new MarcaNotFoundException("Marca no encontrada"));
     }
 
-    public void eliminarMarcaId(Long id) {
+    public void eliminar(Long id) {
         marcaRepository.deleteById(id);
     }
 
-    public Marca actualizarMarcaId(Long id, String nombre) {
-        Marca actualizar = marcaRepository.findById(id).orElseThrow(()-> new MarcaNotFoundException("Marca no encontrada"));
-        actualizar.setNombre(actualizar.getNombre());
-        return  marcaRepository.save(actualizar);
+    public Marca actualizar(Long id, Marca marca) {
+        Marca marcaExistente = marcaRepository.findById(id).orElseThrow(()
+                -> new MarcaNotFoundException("Marca no encontrada"));
+        marcaExistente.setNombre(marca.getNombre());
+        return  marcaRepository.save(marcaExistente);
     }
 }

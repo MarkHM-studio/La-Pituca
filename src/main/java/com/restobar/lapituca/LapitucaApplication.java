@@ -14,8 +14,8 @@ import java.time.format.DateTimeFormatter;
 public class LapitucaApplication {
 
 	public static void main(String[] args) {
-		LocalDateTime hola = LocalDateTime.now();
 
+		LocalDateTime hola = LocalDateTime.now();
 		System.out.println(hola);
 
 		SpringApplication.run(LapitucaApplication.class, args);

@@ -2,7 +2,11 @@ package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.entity.Marca;
 import com.restobar.lapituca.service.MarcaService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -16,28 +20,35 @@ public class MarcaController {
     private final MarcaService marcaService;
 
     @PostMapping
-    public Marca crearMarca(@RequestBody Marca marca){
+    public ResponseEntity<Marca> crear(@Valid @RequestBody Marca marca){
         marca.setFecha_inscripcion(LocalDate.now());
-        return marcaService.crearMarca(marca);
+        Marca nuevaMarca = marcaService.guardar(marca);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaMarca);
     }
+    /*
+    @PostMapping
+    public Marca crear(@Valid @RequestBody Marca marca){
+        marca.setFecha_inscripcion(LocalDate.now());
+        return marcaService.guardar(marca);
+    }*/
 
     @GetMapping
-    public List<Marca> obtenerMarcas(){
-        return marcaService.obtenerMarcas();
+    public List<Marca> listarTodos(){
+        return marcaService.listarTodos();
     }
 
     @GetMapping("/{id}")
-    public Marca obtenerMarcaId(@PathVariable Long id){
-        return marcaService.obtenerMarcaId(id);
+    public Marca obtenerPorId(@PathVariable Long id){
+        return marcaService.obtenerPorId(id);
     }
 
     @DeleteMapping("/{id}")
-    public void eliminarMarcaId(@PathVariable Long id){
-        marcaService.eliminarMarcaId(id);
+    public void eliminar(@PathVariable Long id){
+        marcaService.eliminar(id);
     }
 
-    @PutMapping("/{id")
-    public Marca actualizarMarcaId(@PathVariable Long id, String nombre){
-        return marcaService.actualizarMarcaId(id, nombre);
+    @PutMapping("/{id}")
+    public Marca actualizar(@PathVariable Long id, @RequestBody Marca marca){
+        return marcaService.actualizar(id, marca);
     }
 }
