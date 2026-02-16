@@ -47,8 +47,6 @@ public class GlobalExceptionHandler {
 }
 
 /*
-package com.restobar.lapituca.exception;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -123,6 +121,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(apiError);
     }
 
+    /*
     // 🔹 Validaciones en @RequestParam o @PathVariable
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiError> handleConstraint(
@@ -144,8 +143,8 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(apiError);
-    }
-
+    }*/
+    /*
     // 🔹 Error genérico (fallback)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneral(
@@ -162,5 +161,4 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiError);
     }
-}
- */
+}*/

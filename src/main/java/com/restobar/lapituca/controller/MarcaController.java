@@ -20,11 +20,12 @@ public class MarcaController {
     private final MarcaService marcaService;
 
     @PostMapping
-    public ResponseEntity<Marca> crear(@Valid @RequestBody Marca marca){
+    public ResponseEntity<Marca> crear(@Valid @RequestBody Marca marca) {
         marca.setFecha_inscripcion(LocalDate.now());
         Marca nuevaMarca = marcaService.guardar(marca);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaMarca);
     }
+
     /*
     @PostMapping
     public Marca crear(@Valid @RequestBody Marca marca){
@@ -38,7 +39,7 @@ public class MarcaController {
     }
 
     @GetMapping("/{id}")
-    public Marca obtenerPorId(@PathVariable Long id){
+    public Marca obtenerPorId(@RequestParam @PathVariable @Min(value = 1, message = "message") Long id){
         return marcaService.obtenerPorId(id);
     }
 
