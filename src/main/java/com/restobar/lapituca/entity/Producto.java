@@ -41,12 +41,19 @@ public class Producto {
     @Column(nullable = false)
     private LocalDate fecha_modificacion;
 
+    //Relaciones:
+
+    //Producto-Categoria
     @ManyToOne
     @JoinColumn(name = "id_categoria")
     private Categoria categoria;
 
+    //Producto-Marca
     @ManyToOne
     @JoinColumn(name = "id_marca")
     private Marca marca;
 
+    //Producto-Pedido
+    @ManyToOne()
+    private Pedido pedido;
 }
