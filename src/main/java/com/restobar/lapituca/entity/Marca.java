@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "Marca")
@@ -28,4 +29,11 @@ public class Marca {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDate fecha_inscripcion;
+
+    @CreationTimestamp
+    @Column(nullable = false)
+    private LocalDate fecha_modificacion;
+
+    @OneToMany(mappedBy = "marca")
+    private List<Producto> productos;
 }

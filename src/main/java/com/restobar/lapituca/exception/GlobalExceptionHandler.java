@@ -1,5 +1,7 @@
 package com.restobar.lapituca.exception;
 
+import com.restobar.lapituca.service.ProductoService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,151 +16,130 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> manejarValidaciones(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> manejarValidaciones(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
 
-        Map<String, String> errores = new HashMap<>();
-
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errores.put(error.getField(), error.getDefaultMessage())
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Error de validación",
+                request.getRequestURI()
         );
 
-        return ResponseEntity.badRequest().body(errores);
+        ex.getBindingResult().getFieldErrors().forEach(fieldError -> {
+            error.addSubError(new FieldErrorResponse(
+                    fieldError.getField(),
+                    fieldError.getRejectedValue(),
+                    fieldError.getDefaultMessage()
+            ));
+        });
+
+        return ResponseEntity.badRequest().body(error);
     }
 
-    // "api/entidad/abc"
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Map<String, String>> manejarTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ErrorResponse> manejarTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", "El ID debe ser numérico y válido");
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "El parámetro debe ser del tipo correcto",
+                request.getRequestURI()
+        );
 
         return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(MarcaNotFoundException.class)
-    public ResponseEntity<Map<String, String>> manejarMarcaNoEncontrada(MarcaNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> manejarMarcaNoEncontrada(
+            MarcaNotFoundException ex,
+            HttpServletRequest request) {
 
-        Map<String, String> error = new HashMap<>();
-        error.put("error", ex.getMessage());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-}
-
-/*
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.ConstraintViolationException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    // 🔹 Validación de @Valid (RequestBody)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(
-            MethodArgumentNotValidException ex,
+    @ExceptionHandler(CategoriaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarCategoriaNoEncontrada(
+            CategoriaNotFoundException ex,
             HttpServletRequest request) {
 
-        List<String> errores = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.toList());
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
 
-        ApiError apiError = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("Error de validación")
-                .path(request.getRequestURI())
-                .errors(errores)
-                .build();
-
-        return ResponseEntity.badRequest().body(apiError);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    // 🔹 Marca no encontrada
-    @ExceptionHandler(MarcaNotFoundException.class)
-    public ResponseEntity<ApiError> handleMarcaNotFound(
-            MarcaNotFoundException ex,
-            HttpServletRequest request) {
-
-        ApiError apiError = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Not Found")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiError);
-    }
-
-    // 🔹 ID mal formado (ej: /api/marca/abc)
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiError> handleTypeMismatch(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-
-        ApiError apiError = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("El parámetro debe ser numérico y válido")
-                .path(request.getRequestURI())
-                .build();
-
-        return ResponseEntity.badRequest().body(apiError);
+    @ExceptionHandler(ProductoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarProductoNoEncontrado(ProductoNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /*
-    // 🔹 Validaciones en @RequestParam o @PathVariable
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiError> handleConstraint(
-            ConstraintViolationException ex,
-            HttpServletRequest request) {
-
-        List<String> errores = ex.getConstraintViolations()
-                .stream()
-                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
-                .collect(Collectors.toList());
-
-        ApiError apiError = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message("Error de validación de parámetros")
-                .path(request.getRequestURI())
-                .errors(errores)
-                .build();
-
-        return ResponseEntity.badRequest().body(apiError);
-    }*/
-    /*
-    // 🔹 Error genérico (fallback)
+    // Captura global para cualquier excepción no controlada
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiError> handleGeneral(
+    public ResponseEntity<ErrorResponse> manejarErroresGenerales(
             Exception ex,
             HttpServletRequest request) {
 
-        ApiError apiError = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message("Ha ocurrido un error inesperado")
-                .path(request.getRequestURI())
-                .build();
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                "Error interno del servidor",
+                request.getRequestURI()
+        );
 
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiError);
-    }
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }*/
+
+}
+/*
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public ResponseEntity<Map<String, String>> manejarValidaciones(MethodArgumentNotValidException ex) {
+
+    Map<String, String> errores = new HashMap<>();
+
+    ex.getBindingResult().getFieldErrors().forEach(error ->
+            errores.put(error.getField(), error.getDefaultMessage())
+    );
+
+    return ResponseEntity.badRequest().body(errores);
+}
+
+// "api/entidad/abc"
+@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+public ResponseEntity<Map<String, String>> manejarTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+    Map<String, String> error = new HashMap<>();
+    error.put("error", "El ID debe ser numérico y válido");
+
+    return ResponseEntity.badRequest().body(error);
+}
+
+@ExceptionHandler(MarcaNotFoundException.class)
+public ResponseEntity<Map<String, String>> manejarMarcaNoEncontrada(MarcaNotFoundException ex) {
+
+    Map<String, String> error = new HashMap<>();
+    error.put("error", ex.getMessage());
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
 }*/

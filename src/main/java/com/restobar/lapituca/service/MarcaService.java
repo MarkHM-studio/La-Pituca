@@ -6,6 +6,7 @@ import com.restobar.lapituca.repository.MarcaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -27,14 +28,17 @@ public class MarcaService {
                 -> new MarcaNotFoundException("Marca no encontrada"));
     }
 
-    public void eliminar(Long id) {
-        marcaRepository.deleteById(id);
-    }
-
     public Marca actualizar(Long id, Marca marca) {
         Marca marcaExistente = marcaRepository.findById(id).orElseThrow(()
                 -> new MarcaNotFoundException("Marca no encontrada"));
+
         marcaExistente.setNombre(marca.getNombre());
+        marcaExistente.setFecha_modificacion(LocalDate.now());
+
         return  marcaRepository.save(marcaExistente);
+    }
+
+    public void eliminar(Long id) {
+        marcaRepository.deleteById(id);
     }
 }

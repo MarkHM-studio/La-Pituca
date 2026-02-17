@@ -5,6 +5,7 @@ import com.restobar.lapituca.service.MarcaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,6 @@ public class MarcaController {
 
     @PostMapping
     public ResponseEntity<Marca> crear(@Valid @RequestBody Marca marca) {
-        marca.setFecha_inscripcion(LocalDate.now());
         Marca nuevaMarca = marcaService.guardar(marca);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevaMarca);
     }
@@ -34,22 +34,26 @@ public class MarcaController {
     }*/
 
     @GetMapping
-    public List<Marca> listarTodos(){
-        return marcaService.listarTodos();
+    public ResponseEntity<List<Marca>> listarTodos(){
+        return ResponseEntity.ok(marcaService.listarTodos());
     }
 
     @GetMapping("/{id}")
-    public Marca obtenerPorId(@RequestParam @PathVariable @Min(value = 1, message = "message") Long id){
-        return marcaService.obtenerPorId(id);
-    }
-
-    @DeleteMapping("/{id}")
-    public void eliminar(@PathVariable Long id){
-        marcaService.eliminar(id);
+    public ResponseEntity<Marca> obtenerPorId(@PathVariable Long id){
+        return ResponseEntity.ok(marcaService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
-    public Marca actualizar(@PathVariable Long id, @RequestBody Marca marca){
-        return marcaService.actualizar(id, marca);
+    public ResponseEntity<Marca> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody Marca marca){
+        return ResponseEntity.ok(marcaService.actualizar(id, marca));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id){
+        marcaService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

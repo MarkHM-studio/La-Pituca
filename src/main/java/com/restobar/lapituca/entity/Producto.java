@@ -36,4 +36,17 @@ public class Producto {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDate fecha_inscripcion;
+
+    @CreationTimestamp
+    @Column(nullable = false)
+    private LocalDate fecha_modificacion;
+
+    @ManyToOne
+    @JoinColumn(name = "id_categoria")
+    private Categoria categoria;
+
+    @ManyToOne
+    @JoinColumn(name = "id_marca")
+    private Marca marca;
+
 }
