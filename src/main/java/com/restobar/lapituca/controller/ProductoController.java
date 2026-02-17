@@ -1,6 +1,7 @@
 package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.ProductoRequest;
+import com.restobar.lapituca.dto.ProductoResponse;
 import com.restobar.lapituca.entity.Producto;
 import com.restobar.lapituca.service.ProductoService;
 import jakarta.validation.Valid;
@@ -19,8 +20,8 @@ public class ProductoController {
     private final ProductoService productoService;
 
     @PostMapping
-    public ResponseEntity<Producto> crear(@Valid @RequestBody ProductoRequest request){
-        Producto nuevoProducto = productoService.guardar(request);
+    public ResponseEntity<ProductoResponse> crear(@Valid @RequestBody ProductoRequest request){
+        ProductoResponse nuevoProducto = productoService.guardar(request);
 
         URI location = URI.create("/api/producto/" + nuevoProducto.getId());
 

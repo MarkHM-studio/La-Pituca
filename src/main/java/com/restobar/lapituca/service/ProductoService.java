@@ -1,6 +1,9 @@
 package com.restobar.lapituca.service;
 
+import com.restobar.lapituca.dto.CategoriaSimpleDTO;
+import com.restobar.lapituca.dto.MarcaSimpleDTO;
 import com.restobar.lapituca.dto.ProductoRequest;
+import com.restobar.lapituca.dto.ProductoResponse;
 import com.restobar.lapituca.entity.Categoria;
 import com.restobar.lapituca.entity.Marca;
 import com.restobar.lapituca.entity.Producto;
@@ -26,7 +29,7 @@ public class ProductoService {
     private final MarcaRepository marcaRepository;
 
     @Transactional //Garantiza que las operaciones se ejecuten todas o ninguna. Si algo falla se hace RollBack(deshacer todo)
-    public Producto guardar(ProductoRequest request){
+    public ProductoResponse guardar(ProductoRequest request){
 
         Categoria categoria = categoriaRepository.findById(request.getCategoriaId()).orElseThrow(()-> new CategoriaNotFoundException("Categoria no encontrada"));
 
@@ -39,7 +42,22 @@ public class ProductoService {
         producto.setCategoria(categoria);
         producto.setMarca(marca);
 
-        return productoRepository.save(producto);
+        Producto productoGuardado = productoRepository.save(producto);
+
+        return new ProductoResponse(
+                productoGuardado.getId(),
+                productoGuardado.getNombre(),
+                productoGuardado.getPrecio(),
+                productoGuardado.getStock(),
+                new CategoriaSimpleDTO(
+                        categoria.getId(),
+                        categoria.getNombre()
+                ),
+                new MarcaSimpleDTO(
+                        marca.getId(),
+                        marca.getNombre()
+                )
+        );
     }
 
     public List<Producto> listarTodos(){
