@@ -51,13 +51,13 @@ public class Pedido {
     private LocalDateTime fechaHora_actualizacion;
 
     //Relaciones
-
     //Pedido-Producto
     @ManyToOne
     @JoinColumn(name = "id_producto", nullable = false)
     private Producto producto;
 
+    //Pedido-Comprobante
     @ManyToOne
-    @JoinColumn(name = "id_comprobante")
+    @JoinColumn(name = "id_comprobante", nullable = false)
     private Comprobante comprobante;
 }

@@ -13,7 +13,7 @@ public class ProductoResponse {
     private String nombre;
     private BigDecimal precio;
     private Integer stock;
-    private CategoriaSimpleDTO categoria;
-    private MarcaSimpleDTO marca;
+    private CategoriaResponse categoria;
+    private MarcaResponse marca;
 }
 

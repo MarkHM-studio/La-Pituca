@@ -34,6 +34,7 @@ public class Categoria {
     @Column(nullable = false)
     private LocalDate fecha_modificacion;
 
+    /*
     @OneToMany(mappedBy = "categoria")
-    private List<Producto> productos;
+    private List<Producto> productos;*/
 }

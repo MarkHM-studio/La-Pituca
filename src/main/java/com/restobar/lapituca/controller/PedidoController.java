@@ -2,7 +2,6 @@ package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.PedidoRequest;
 import com.restobar.lapituca.entity.Pedido;
-import com.restobar.lapituca.repository.PedidoRepository;
 import com.restobar.lapituca.service.PedidoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +17,10 @@ import java.util.List;
 public class PedidoController {
 
     private final PedidoService pedidoService;
-    private final PedidoRepository pedidoRepository;
 
     @PostMapping
     private ResponseEntity<Pedido> crear(@Valid @RequestBody PedidoRequest request){
-        Pedido pedido = pedidoService.crear(request);
+        Pedido pedido = pedidoService.guardar(request);
 
         URI location = URI.create("/api/pedido/" + pedido.getId());
 
@@ -36,9 +34,16 @@ public class PedidoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pedido> obtenerPorId(@PathVariable Long id){
+    public ResponseEntity<List<Pedido>> obtenerPorComprobanteId(@PathVariable Long id){
 
-        return ResponseEntity.ok(pedidoService.obtenerPorId(id));
+        return ResponseEntity.ok(pedidoService.obtenerPorComprobanteId(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Pedido> actualizar(@PathVariable Long id, @RequestBody PedidoRequest request){
+
+        Pedido pedidoActualizado = pedidoService.actualizar(id, request);
+        return ResponseEntity.ok(pedidoActualizado);
     }
 
 

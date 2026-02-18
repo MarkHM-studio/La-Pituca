@@ -55,7 +55,8 @@ public class Producto {
     @JoinColumn(name = "id_marca")
     private Marca marca;
 
+    /*
     //Producto-Pedido
     @OneToMany(mappedBy = "producto") //Si no necesitas navegar desde producto → pedidos, puedes quitarlo.
-    private List<Pedido> pedido;
+    private List<Pedido> pedido;*/
 }

@@ -34,6 +34,7 @@ public class Marca {
     @Column(nullable = false)
     private LocalDate fecha_modificacion;
 
+    /*
     @OneToMany(mappedBy = "marca")
-    private List<Producto> productos;
+    private List<Producto> productos;*/
 }

@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.CategoriaSimpleDTO;
-import com.restobar.lapituca.dto.MarcaSimpleDTO;
+import com.restobar.lapituca.dto.CategoriaResponse;
+import com.restobar.lapituca.dto.MarcaResponse;
 import com.restobar.lapituca.dto.ProductoRequest;
 import com.restobar.lapituca.dto.ProductoResponse;
 import com.restobar.lapituca.entity.Categoria;
@@ -31,16 +31,16 @@ public class ProductoService {
     @Transactional //Garantiza que las operaciones se ejecuten todas o ninguna. Si algo falla se hace RollBack(deshacer todo)
     public ProductoResponse guardar(ProductoRequest request){
 
-        Categoria categoria = categoriaRepository.findById(request.getCategoriaId()).orElseThrow(()-> new CategoriaNotFoundException("Categoria no encontrada"));
+        Categoria categoriaExistente = categoriaRepository.findById(request.getCategoriaId()).orElseThrow(()-> new CategoriaNotFoundException("Categoria no encontrada"));
 
-        Marca marca = marcaRepository.findById(request.getMarcaId()).orElseThrow(()-> new MarcaNotFoundException("Marca no encontrada"));
+        Marca marcaExistente = marcaRepository.findById(request.getMarcaId()).orElseThrow(()-> new MarcaNotFoundException("Marca no encontrada"));
 
         Producto producto = new Producto();
         producto.setNombre(request.getNombre());
         producto.setPrecio(request.getPrecio());
         producto.setStock(request.getStock());
-        producto.setCategoria(categoria);
-        producto.setMarca(marca);
+        producto.setCategoria(categoriaExistente);
+        producto.setMarca(marcaExistente);
 
         Producto productoGuardado = productoRepository.save(producto);
 
@@ -49,13 +49,13 @@ public class ProductoService {
                 productoGuardado.getNombre(),
                 productoGuardado.getPrecio(),
                 productoGuardado.getStock(),
-                new CategoriaSimpleDTO(
-                        categoria.getId(),
-                        categoria.getNombre()
+                new CategoriaResponse(
+                        categoriaExistente.getId(),
+                        categoriaExistente.getNombre()
                 ),
-                new MarcaSimpleDTO(
-                        marca.getId(),
-                        marca.getNombre()
+                new MarcaResponse(
+                        marcaExistente.getId(),
+                        marcaExistente.getNombre()
                 )
         );
     }
@@ -68,14 +68,38 @@ public class ProductoService {
         return productoRepository.findById(id).orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
     }
 
-    public Producto actualizar(Long id, Producto producto){
-        Producto productoExistente = productoRepository.findById(id).orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
-        productoExistente.setNombre(producto.getNombre());
-        productoExistente.setPrecio(producto.getPrecio());
-        productoExistente.setStock(producto.getStock());
-        productoExistente.setFecha_modificacion(LocalDate.now());
+    @Transactional
+    public ProductoResponse actualizar(Long id, ProductoRequest request){
 
-        return productoRepository.save(productoExistente);
+        Producto productoExistente = productoRepository.findById(id).orElseThrow(()-> new ProductoNotFoundException("Producto no encontrado"));
+
+        productoExistente.setNombre(request.getNombre());
+        productoExistente.setPrecio(request.getPrecio());
+        productoExistente.setStock(request.getStock());
+
+        Categoria categoriaExistente = categoriaRepository.findById(request.getCategoriaId()).orElseThrow(()-> new CategoriaNotFoundException("Categoria no encontrada"));
+
+        productoExistente.setCategoria(categoriaExistente);
+
+        Marca marcaExistente = marcaRepository.findById(request.getMarcaId()).orElseThrow(()-> new MarcaNotFoundException("Marca no encontrada"));
+
+        productoExistente.setMarca(marcaExistente);
+
+        Producto productoActualizado = productoRepository.save(productoExistente);
+
+        return new ProductoResponse(
+                productoActualizado.getId(),
+                productoActualizado.getNombre(),
+                productoActualizado.getPrecio(),
+                productoActualizado.getStock(),
+                new CategoriaResponse(
+                        categoriaExistente.getId(),
+                        categoriaExistente.getNombre()
+                ),
+                new MarcaResponse(
+                        marcaExistente.getId(),
+                        marcaExistente.getNombre()
+                ));
     }
 
     public void eliminar(Long id){

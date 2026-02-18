@@ -32,7 +32,6 @@ public class Comprobante {
     private LocalDateTime fechaHora_venta;
 
     //Relaciones
-
     //Comprobante-Pedido
     @OneToMany(mappedBy = "comprobante")
     private List<Pedido> pedidos;

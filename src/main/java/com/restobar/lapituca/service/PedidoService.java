@@ -4,6 +4,7 @@ import com.restobar.lapituca.dto.PedidoRequest;
 import com.restobar.lapituca.entity.Comprobante;
 import com.restobar.lapituca.entity.Pedido;
 import com.restobar.lapituca.entity.Producto;
+import com.restobar.lapituca.exception.ComprobanteNotFoundException;
 import com.restobar.lapituca.exception.PedidoNotFoundException;
 import com.restobar.lapituca.exception.ProductoNotFoundException;
 import com.restobar.lapituca.repository.ComprobanteRepository;
@@ -25,7 +26,7 @@ public class PedidoService {
     private final ComprobanteRepository comprobanteRepository;
 
     @Transactional
-    public Pedido crear(PedidoRequest request) {
+    public Pedido guardar(PedidoRequest request) {
 
         Producto producto = productoRepository.findById(request.getProductoId())
                 .orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
@@ -57,14 +58,39 @@ public class PedidoService {
         return pedidoRepository.findAll();
     }
 
-    public Pedido obtenerPorId(Long id){
-        return pedidoRepository.findById(id).orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+    public List<Pedido> obtenerPorComprobanteId(Long id){
+
+        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(id);
+
+        if (pedidos.isEmpty()) {
+            throw new PedidoNotFoundException("No hay pedidos para este comprobante");
+        }
+
+        return pedidos;
     }
 
-    public Pedido actualizar(Long id, Pedido pedido){
+    @Transactional
+    public Pedido actualizar(Long id, PedidoRequest request){
+
         Pedido pedidoExistente = pedidoRepository.findById(id).orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        pedidoExistente.setCantidad(request.getCantidad());
 
-        return null;
+        Producto productoExistente = productoRepository.findById(request.getProductoId()).orElseThrow(()-> new ProductoNotFoundException("Producto no encontrado"));
+        pedidoExistente.setProducto(productoExistente);
+        pedidoExistente.setPrecio_unitario(productoExistente.getPrecio());
+
+        BigDecimal precio_unitario = productoExistente.getPrecio();
+        BigDecimal subtotal = precio_unitario.multiply(BigDecimal.valueOf(request.getCantidad()));
+        pedidoExistente.setSubtotal(subtotal);
+
+        pedidoExistente.setEstado("LISTO");
+
+        pedidoExistente.setProducto(productoExistente);
+
+        Comprobante comprobanteExistente = comprobanteRepository.findById(pedidoExistente.getComprobante().getId()).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        pedidoExistente.setComprobante(comprobanteExistente);
+
+        return pedidoRepository.save(pedidoExistente);
     }
-
 }

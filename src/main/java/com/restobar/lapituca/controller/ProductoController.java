@@ -21,11 +21,11 @@ public class ProductoController {
 
     @PostMapping
     public ResponseEntity<ProductoResponse> crear(@Valid @RequestBody ProductoRequest request){
-        ProductoResponse nuevoProducto = productoService.guardar(request);
+        ProductoResponse productoCreado = productoService.guardar(request);
 
-        URI location = URI.create("/api/producto/" + nuevoProducto.getId());
+        URI location = URI.create("/api/producto/" + productoCreado.getId());
 
-        return ResponseEntity.created(location).body(nuevoProducto);
+        return ResponseEntity.created(location).body(productoCreado);
     }
 
     @GetMapping
@@ -39,8 +39,10 @@ public class ProductoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Producto> actualizar(@PathVariable Long id, @Valid @RequestBody Producto producto){
-        return ResponseEntity.ok(productoService.actualizar(id, producto));
+    public ResponseEntity<ProductoResponse> actualizar(@PathVariable Long id, @Valid @RequestBody ProductoRequest request){
+        ProductoResponse productoActualizado = productoService.actualizar(id, request);
+        
+        return ResponseEntity.ok(productoActualizado);
     }
 
     @DeleteMapping("/{id}")
