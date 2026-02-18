@@ -94,6 +94,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(PedidoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarPedidoNoEncontrado(PedidoNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     /*
     // Captura global para cualquier excepción no controlada
     @ExceptionHandler(Exception.class)

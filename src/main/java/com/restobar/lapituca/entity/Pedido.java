@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -45,14 +46,18 @@ public class Pedido {
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
 
-    @CreationTimestamp
+    @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
 
     //Relaciones
 
     //Pedido-Producto
-    @OneToMany
-    @JoinColumn(name = "id_producto")
-    private List<Producto> productos;
+    @ManyToOne
+    @JoinColumn(name = "id_producto", nullable = false)
+    private Producto producto;
+
+    @ManyToOne
+    @JoinColumn(name = "id_comprobante")
+    private Comprobante comprobante;
 }

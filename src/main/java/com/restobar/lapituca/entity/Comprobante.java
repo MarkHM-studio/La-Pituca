@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "Comprobante")
@@ -30,6 +31,10 @@ public class Comprobante {
 
     private LocalDateTime fechaHora_venta;
 
+    //Relaciones
 
+    //Comprobante-Pedido
+    @OneToMany(mappedBy = "comprobante")
+    private List<Pedido> pedidos;
 }
 

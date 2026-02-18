@@ -6,9 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Table(name = "Producto")
@@ -37,7 +39,7 @@ public class Producto {
     @Column(nullable = false, updatable = false)
     private LocalDate fecha_inscripcion;
 
-    @CreationTimestamp
+    @UpdateTimestamp
     @Column(nullable = false)
     private LocalDate fecha_modificacion;
 
@@ -54,6 +56,6 @@ public class Producto {
     private Marca marca;
 
     //Producto-Pedido
-    @ManyToOne()
-    private Pedido pedido;
+    @OneToMany(mappedBy = "producto") //Si no necesitas navegar desde producto → pedidos, puedes quitarlo.
+    private List<Pedido> pedido;
 }
