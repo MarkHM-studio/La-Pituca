@@ -47,12 +47,12 @@ public class Producto {
 
     //Producto-Categoria
     @ManyToOne
-    @JoinColumn(name = "id_categoria")
+    @JoinColumn(name = "id_categoria", nullable = true)
     private Categoria categoria;
 
     //Producto-Marca
     @ManyToOne
-    @JoinColumn(name = "id_marca")
+    @JoinColumn(name = "id_marca", nullable = true)
     private Marca marca;
 
     /*
