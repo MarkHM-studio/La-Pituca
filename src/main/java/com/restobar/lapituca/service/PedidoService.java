@@ -31,10 +31,18 @@ public class PedidoService {
         Producto producto = productoRepository.findById(request.getProductoId())
                 .orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
 
+        //validaciòn de stock
+        if (producto.getStock() < request.getCantidad()) {
+            throw new RuntimeException("Stock insuficiente"); //Validar con exception personalizada
+        }
+
+        //Creas o reasignas un comprobante
         Comprobante comprobante = comprobanteRepository
                 .findById(request.getComprobanteId())
                 .orElseGet(() -> {
                     Comprobante nuevo = new Comprobante();
+                    nuevo.setTotal(BigDecimal.ZERO);
+                    nuevo.setIGV(BigDecimal.ZERO);
                     return comprobanteRepository.save(nuevo);
                 });
 
@@ -42,6 +50,10 @@ public class PedidoService {
         BigDecimal subtotal = precioUnitario.multiply(
                 BigDecimal.valueOf(request.getCantidad())
         );
+
+        //reducciòn de stock
+        producto.setStock(producto.getStock() - request.getCantidad());
+        productoRepository.save(producto);
 
         Pedido pedido = new Pedido();
         pedido.setCantidad(request.getCantidad());
@@ -51,7 +63,11 @@ public class PedidoService {
         pedido.setSubtotal(subtotal);
         pedido.setEstado("PENDIENTE");
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoGuardado = pedidoRepository.save(pedido);
+
+        recalcularTotalesComprobante(comprobante.getId()); //No puede ser request.getComprobanteId(), por que te arriesgas a que ese id de comprobante mandado, no exista.
+
+        return pedidoGuardado;
     }
 
     public List<Pedido> listarTodos(){
@@ -73,24 +89,94 @@ public class PedidoService {
     public Pedido actualizar(Long id, PedidoRequest request){
 
         Pedido pedidoExistente = pedidoRepository.findById(id).orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
-        pedidoExistente.setCantidad(request.getCantidad());
+
+        //Obtener producto anterior y cantidad de cuanto se pidiò para devolver el stock , posteriormente
+        Producto productoAnterior = pedidoExistente.getProducto();
+        int cantidadAnterior = pedidoExistente.getCantidad();
+
+        //Devuelve el stock anterior
+        productoAnterior.setStock(productoAnterior.getStock() + cantidadAnterior);
+        productoRepository.save(productoAnterior);
 
         Producto productoExistente = productoRepository.findById(request.getProductoId()).orElseThrow(()-> new ProductoNotFoundException("Producto no encontrado"));
-        pedidoExistente.setProducto(productoExistente);
-        pedidoExistente.setPrecio_unitario(productoExistente.getPrecio());
+
+        //Verificar stock (aunque en un principio este producto no debería estar disponible ni aparecer en el frontend
+        if (productoExistente.getStock() < request.getCantidad()) {
+            throw new RuntimeException("Stock insuficiente"); //Reemplazar por exception personalizada
+        }
+
+        //Descontar stock
+        productoExistente.setStock(productoExistente.getStock() - request.getCantidad());
+        productoRepository.save(productoExistente);
+
+        //Si es el mismo producto, no pasa nada, solo se actualiza la cantidad
+        //Si es diferente producto, se devuelve la cantidad del anterior prod, y se resta stock al nuevoProd.
 
         BigDecimal precio_unitario = productoExistente.getPrecio();
         BigDecimal subtotal = precio_unitario.multiply(BigDecimal.valueOf(request.getCantidad()));
+
+        pedidoExistente.setCantidad(request.getCantidad());
+        pedidoExistente.setPrecio_unitario(precio_unitario);
         pedidoExistente.setSubtotal(subtotal);
-
-        pedidoExistente.setEstado("LISTO");
-
         pedidoExistente.setProducto(productoExistente);
+        pedidoExistente.setEstado("ACTUALIZADO");
 
+        Pedido pedidoActualizado = pedidoRepository.save(pedidoExistente);
+
+        //Ya no se coloca, por que si el pedido existe, el comprobante tambièn (por las relaciones), que no admiten que Id_comprobante, en Pedido, sea nulo
+        /*
         Comprobante comprobanteExistente = comprobanteRepository.findById(pedidoExistente.getComprobante().getId()).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
+        */
 
-        pedidoExistente.setComprobante(comprobanteExistente);
+        recalcularTotalesComprobante(
+                pedidoExistente.getComprobante().getId()
+        );
 
-        return pedidoRepository.save(pedidoExistente);
+        /* En primer lugar, no te permitirìa cambiar, dado que el idComp. es foranea, y tendrìas que eliminar el comprobante primero
+        pedidoExistente.setComprobante(comprobanteExistente);*/
+
+        return pedidoActualizado;
     }
+
+    private void recalcularTotalesComprobante(Long comprobanteId) {
+
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
+                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        //Buscar todos los pedidos pertenecientes a un comprobante
+        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
+
+        //Recorreme todos "subtotal" tantas veces, como pedidos pertenezcan a un comprobante
+        BigDecimal total = pedidos.stream()
+                .map(Pedido::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);//en cada recorrido autoincrementame el total
+
+        // IGV 18% (Perú)
+        BigDecimal igv = total.multiply(new BigDecimal("0.18"));
+
+        comprobante.setTotal(total);
+        comprobante.setIGV(igv);
+
+        comprobanteRepository.save(comprobante);
+    }
+
+    @Transactional
+    public void eliminar(Long id) {
+
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+
+        // Devolver stock
+        Producto producto = pedido.getProducto();
+        producto.setStock(producto.getStock() + pedido.getCantidad());
+        productoRepository.save(producto);
+
+        Long comprobanteId = pedido.getComprobante().getId();
+
+        pedidoRepository.delete(pedido);
+
+        // Recalcular totales
+        recalcularTotalesComprobante(comprobanteId);
+    }
+
 }

@@ -46,5 +46,11 @@ public class PedidoController {
         return ResponseEntity.ok(pedidoActualizado);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id){
+        pedidoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
 
 }
