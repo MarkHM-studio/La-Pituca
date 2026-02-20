@@ -7,8 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -26,13 +28,13 @@ public class Marca {
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @CreationTimestamp
+    @CreationTimestamp()
     @Column(nullable = false, updatable = false)
-    private LocalDate fecha_inscripcion;
+    private LocalDateTime fechaHora_registro;
 
-    @CreationTimestamp
+    @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDate fecha_modificacion;
+    private LocalDateTime fechaHora_actualizacion;
 
     /*
     @OneToMany(mappedBy = "marca")

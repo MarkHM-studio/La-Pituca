@@ -1,7 +1,9 @@
 package com.restobar.lapituca.exception;
 
+import com.restobar.lapituca.entity.TipoEntrega;
 import com.restobar.lapituca.service.ProductoService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -110,6 +112,28 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(MesaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarMesaNoEncontrada(MesaNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(TipoEntregaNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarTipoEntregaNoEncontrado(TipoEntregaNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NO_CONTENT.value(),
+                HttpStatus.NO_CONTENT.getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI()
         );

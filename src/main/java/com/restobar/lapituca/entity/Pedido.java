@@ -60,4 +60,8 @@ public class Pedido {
     @ManyToOne
     @JoinColumn(name = "id_comprobante", nullable = false)
     private Comprobante comprobante;
+
+    @ManyToOne
+    @JoinColumn(name = "id_tipoEntrega", nullable = false)
+    private TipoEntrega tipoEntrega;
 }

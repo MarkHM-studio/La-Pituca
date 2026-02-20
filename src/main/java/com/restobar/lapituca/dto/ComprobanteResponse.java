@@ -17,4 +17,5 @@ public class ComprobanteResponse {
     private BigDecimal total;
     private BigDecimal IGV;
     private LocalDateTime fechaHora_venta;
+    private String estado;
 }

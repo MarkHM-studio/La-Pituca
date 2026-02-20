@@ -31,9 +31,16 @@ public class Comprobante {
 
     private LocalDateTime fechaHora_venta;
 
+    @Column(nullable = false, length = 25)
+    private String estado;
+
     //Relaciones
     //Comprobante-Pedido
     @OneToMany(mappedBy = "comprobante")
     private List<Pedido> pedidos;
+
+    @OneToOne
+    @JoinColumn(name = "id_grupo")
+    private Grupo grupo;
 }
 

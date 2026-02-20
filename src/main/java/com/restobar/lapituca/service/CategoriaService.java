@@ -34,7 +34,6 @@ public class CategoriaService {
                 -> new CategoriaNotFoundException("Categoria no encontrada"));
 
         categoriaExistente.setNombre(categoria.getNombre());
-        categoriaExistente.setFecha_modificacion(LocalDate.now());
 
         return categoriaRepository.save(categoriaExistente);
     }

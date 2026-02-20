@@ -8,17 +8,14 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.sound.sampled.Port;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "Categoria")
+@Table(name = "Mesa")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Categoria {
+public class Mesa {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,6 +24,10 @@ public class Categoria {
     @Size(min = 5, max = 50)
     @Column(nullable = false, length = 50)
     private String nombre;
+    /*
+    @Size(min = 5, max = 25)
+    @Column(nullable = false, length = 25)
+    private String estado;*/
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)
@@ -35,8 +36,4 @@ public class Categoria {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
-
-    /*
-    @OneToMany(mappedBy = "categoria")
-    private List<Producto> productos;*/
 }

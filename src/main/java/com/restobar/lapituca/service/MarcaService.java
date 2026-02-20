@@ -33,7 +33,6 @@ public class MarcaService {
                 -> new MarcaNotFoundException("Marca no encontrada"));
 
         marcaExistente.setNombre(marca.getNombre());
-        marcaExistente.setFecha_modificacion(LocalDate.now());
 
         return  marcaRepository.save(marcaExistente);
     }

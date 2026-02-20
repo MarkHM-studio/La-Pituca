@@ -37,14 +37,18 @@ public class PedidoService {
         }
 
         //Creas o reasignas un comprobante
-        Comprobante comprobante = comprobanteRepository
-                .findById(request.getComprobanteId())
-                .orElseGet(() -> {
-                    Comprobante nuevo = new Comprobante();
-                    nuevo.setTotal(BigDecimal.ZERO);
-                    nuevo.setIGV(BigDecimal.ZERO);
-                    return comprobanteRepository.save(nuevo);
-                });
+        Comprobante comprobante;
+        if (request.getComprobanteId() != null) {
+            comprobante = comprobanteRepository.findById(request.getComprobanteId())
+                    .orElseThrow(() -> new RuntimeException("Comprobante no encontrado"));
+            //Si el comprobante ya fue vendido → crear uno nuevo
+            if (comprobante.getFechaHora_venta() != null) {
+                comprobante = crearNuevoComprobante();
+            }
+        } else {
+            //Si se envia comprobanteId → crear uno nuevo
+            comprobante = crearNuevoComprobante();
+        }
 
         BigDecimal precioUnitario = producto.getPrecio();
         BigDecimal subtotal = precioUnitario.multiply(
@@ -67,33 +71,46 @@ public class PedidoService {
 
         recalcularTotalesComprobante(comprobante.getId()); //No puede ser request.getComprobanteId(), por que te arriesgas a que ese id de comprobante mandado, no exista.
 
+        return mapToPedidoDetalleResponse(pedidoGuardado);
+    }
+
+    private PedidoDetalleResponse mapToPedidoDetalleResponse(Pedido pedido) {
         return new PedidoDetalleResponse(
-                pedidoGuardado.getId(),
-                pedidoGuardado.getCantidad(),
-                pedidoGuardado.getSubtotal(),
-                pedidoGuardado.getEstado(),
-                pedidoGuardado.getFechaHora_registro(),
+                pedido.getId(),
+                pedido.getCantidad(),
+                pedido.getSubtotal(),
+                pedido.getEstado(),
+                pedido.getFechaHora_registro(),
                 new ProductoResponse(
-                        pedidoGuardado.getProducto().getId(),
-                        pedidoGuardado.getProducto().getNombre(),
-                        pedidoGuardado.getProducto().getPrecio(),
-                        pedidoGuardado.getProducto().getStock(),
+                        pedido.getProducto().getId(),
+                        pedido.getProducto().getNombre(),
+                        pedido.getProducto().getPrecio(),
+                        pedido.getProducto().getStock(),
                         new CategoriaResponse(
-                                pedidoGuardado.getProducto().getCategoria().getId(),
-                                pedidoGuardado.getProducto().getCategoria().getNombre()
+                                pedido.getProducto().getCategoria().getId(),
+                                pedido.getProducto().getCategoria().getNombre()
                         ),
                         new MarcaResponse(
-                                pedidoGuardado.getProducto().getMarca().getId(),
-                                pedidoGuardado.getProducto().getMarca().getNombre()
+                                pedido.getProducto().getMarca().getId(),
+                                pedido.getProducto().getMarca().getNombre()
                         )
                 ),
                 new ComprobanteResponse(
-                        pedidoGuardado.getComprobante().getId(),
-                        pedidoGuardado.getComprobante().getTotal(),
-                        pedidoGuardado.getComprobante().getIGV(),
-                        pedidoGuardado.getComprobante().getFechaHora_venta()
+                        pedido.getComprobante().getId(),
+                        pedido.getComprobante().getTotal(),
+                        pedido.getComprobante().getIGV(),
+                        pedido.getComprobante().getFechaHora_venta(),
+                        pedido.getComprobante().getEstado()
                 )
         );
+    }
+
+    private Comprobante crearNuevoComprobante() {
+        Comprobante nuevo = new Comprobante();
+        nuevo.setTotal(BigDecimal.ZERO);
+        nuevo.setIGV(BigDecimal.ZERO);
+        nuevo.setEstado("ABIERTO");
+        return comprobanteRepository.save(nuevo);
     }
 
     public List<PedidoResponse> listarTodos() {
@@ -135,35 +152,8 @@ public class PedidoService {
         Pedido p = pedidoRepository.findById(id)
                 .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
 
-        return new PedidoDetalleResponse(
-                        p.getId(),
-                        p.getCantidad(),
-                        p.getSubtotal(),
-                        p.getEstado(),
-                        p.getFechaHora_registro(),
-                        new ProductoResponse(
-                                p.getProducto().getId(),
-                                p.getProducto().getNombre(),
-                                p.getProducto().getPrecio(),
-                                p.getProducto().getStock(),
-                                new CategoriaResponse(
-                                        p.getProducto().getCategoria().getId(),
-                                        p.getProducto().getCategoria().getNombre()
-                                ),
-                                new MarcaResponse(
-                                        p.getProducto().getMarca().getId(),
-                                        p.getProducto().getMarca().getNombre()
-                                )
-                        ),
-                        new ComprobanteResponse(
-                                p.getComprobante().getId(),
-                                p.getComprobante().getTotal(),
-                                p.getComprobante().getIGV(),
-                                p.getComprobante().getFechaHora_venta()
-                        )
-                );
+        return mapToPedidoDetalleResponse(p);
     }
-
 
     public List<PedidoResponse> obtenerPorComprobanteId(Long comprobanteId){
 
@@ -214,7 +204,8 @@ public class PedidoService {
                                 p.getComprobante().getId(),
                                 p.getComprobante().getTotal(),
                                 p.getComprobante().getIGV(),
-                                p.getComprobante().getFechaHora_venta()
+                                p.getComprobante().getFechaHora_venta(),
+                                p.getComprobante().getEstado()
                         )
                 ))
                 .toList();
@@ -270,33 +261,7 @@ public class PedidoService {
         /* En primer lugar, no te permitirìa cambiar, dado que el idComp. es foranea, y tendrìas que eliminar el comprobante primero
         pedidoExistente.setComprobante(comprobanteExistente);*/
 
-        return new PedidoDetalleResponse(
-                pedidoActualizado.getId(),
-                pedidoActualizado.getCantidad(),
-                pedidoActualizado.getSubtotal(),
-                pedidoActualizado.getEstado(),
-                pedidoActualizado.getFechaHora_registro(),
-                new ProductoResponse(
-                        pedidoActualizado.getProducto().getId(),
-                        pedidoActualizado.getProducto().getNombre(),
-                        pedidoActualizado.getProducto().getPrecio(),
-                        pedidoActualizado.getProducto().getStock(),
-                        new CategoriaResponse(
-                                pedidoActualizado.getProducto().getCategoria().getId(),
-                                pedidoActualizado.getProducto().getCategoria().getNombre()
-                        ),
-                        new MarcaResponse(
-                                pedidoActualizado.getProducto().getMarca().getId(),
-                                pedidoActualizado.getProducto().getMarca().getNombre()
-                        )
-                ),
-                new ComprobanteResponse(
-                        pedidoActualizado.getComprobante().getId(),
-                        pedidoActualizado.getComprobante().getTotal(),
-                        pedidoActualizado.getComprobante().getIGV(),
-                        pedidoActualizado.getComprobante().getFechaHora_venta()
-                )
-        );
+        return mapToPedidoDetalleResponse(pedidoActualizado);
     }
 
     private void recalcularTotalesComprobante(Long comprobanteId) {
