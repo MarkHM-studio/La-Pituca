@@ -19,6 +19,7 @@ public class PedidoResponse {
     private String estado;
     private LocalDateTime fechaRegistro;
 
-    private Long productoId;
     private Long comprobanteId;
+    private Long productoId;
+    private Long tipoEntregaId;
 }

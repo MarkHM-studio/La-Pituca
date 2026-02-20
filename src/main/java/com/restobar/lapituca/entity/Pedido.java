@@ -61,6 +61,7 @@ public class Pedido {
     @JoinColumn(name = "id_comprobante", nullable = false)
     private Comprobante comprobante;
 
+    //Pedido-TipoEntrega
     @ManyToOne
     @JoinColumn(name = "id_tipoEntrega", nullable = false)
     private TipoEntrega tipoEntrega;

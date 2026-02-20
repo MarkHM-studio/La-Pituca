@@ -14,4 +14,5 @@ public class PedidoRequest {
 
     private Long comprobanteId;
     private Long productoId;
+    private Long tipoEntregaId;
 }

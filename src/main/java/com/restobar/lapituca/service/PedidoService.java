@@ -4,12 +4,15 @@ import com.restobar.lapituca.dto.*;
 import com.restobar.lapituca.entity.Comprobante;
 import com.restobar.lapituca.entity.Pedido;
 import com.restobar.lapituca.entity.Producto;
+import com.restobar.lapituca.entity.TipoEntrega;
 import com.restobar.lapituca.exception.ComprobanteNotFoundException;
 import com.restobar.lapituca.exception.PedidoNotFoundException;
 import com.restobar.lapituca.exception.ProductoNotFoundException;
+import com.restobar.lapituca.exception.TipoEntregaNotFoundException;
 import com.restobar.lapituca.repository.ComprobanteRepository;
 import com.restobar.lapituca.repository.PedidoRepository;
 import com.restobar.lapituca.repository.ProductoRepository;
+import com.restobar.lapituca.repository.TipoEntregaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProductoRepository productoRepository;
     private final ComprobanteRepository comprobanteRepository;
+    private final TipoEntregaRepository tipoEntregaRepository;
 
     @Transactional
     public PedidoDetalleResponse guardar(PedidoRequest request) {
@@ -59,6 +63,8 @@ public class PedidoService {
         producto.setStock(producto.getStock() - request.getCantidad());
         productoRepository.save(producto);
 
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId()).orElseThrow(()->new TipoEntregaNotFoundException("Tipo de Entrega no encontrado"));
+
         Pedido pedido = new Pedido();
         pedido.setCantidad(request.getCantidad());
         pedido.setProducto(producto);
@@ -66,6 +72,7 @@ public class PedidoService {
         pedido.setPrecio_unitario(precioUnitario);
         pedido.setSubtotal(subtotal);
         pedido.setEstado("PENDIENTE");
+        pedido.setTipoEntrega(tipoEntrega);
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
@@ -101,6 +108,12 @@ public class PedidoService {
                         pedido.getComprobante().getIGV(),
                         pedido.getComprobante().getFechaHora_venta(),
                         pedido.getComprobante().getEstado()
+                ),
+                new TipoEntregaResponse(
+                        pedido.getTipoEntrega().getId(),
+                        pedido.getTipoEntrega().getNombre(),
+                        pedido.getFechaHora_registro(),
+                        pedido.getFechaHora_actualizacion()
                 )
         );
     }
@@ -124,8 +137,9 @@ public class PedidoService {
                         p.getSubtotal(),
                         p.getEstado(),
                         p.getFechaHora_registro(),
+                        p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getComprobante().getId()
+                        p.getTipoEntrega().getId()
                 ))
                 .toList();
     }
@@ -142,8 +156,9 @@ public class PedidoService {
                         p.getSubtotal(),
                         p.getEstado(),
                         p.getFechaHora_registro(),
+                        p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getComprobante().getId()
+                        p.getTipoEntrega().getId()
                 );
     }
 
@@ -166,8 +181,9 @@ public class PedidoService {
                         p.getSubtotal(),
                         p.getEstado(),
                         p.getFechaHora_registro(),
+                        p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getComprobante().getId()
+                        p.getTipoEntrega().getId()
                 ))
                 .toList();
     }
@@ -206,6 +222,12 @@ public class PedidoService {
                                 p.getComprobante().getIGV(),
                                 p.getComprobante().getFechaHora_venta(),
                                 p.getComprobante().getEstado()
+                        ),
+                        new TipoEntregaResponse(
+                                p.getTipoEntrega().getId(),
+                                p.getTipoEntrega().getNombre(),
+                                p.getTipoEntrega().getFechaHora_registro(),
+                                p.getTipoEntrega().getFechaHora_actualizacion()
                         )
                 ))
                 .toList();
@@ -241,11 +263,14 @@ public class PedidoService {
         BigDecimal precio_unitario = productoExistente.getPrecio();
         BigDecimal subtotal = precio_unitario.multiply(BigDecimal.valueOf(request.getCantidad()));
 
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId()).orElseThrow(()->new TipoEntregaNotFoundException("Tipo de Entrega no encontrado"));
+
         pedidoExistente.setCantidad(request.getCantidad());
         pedidoExistente.setPrecio_unitario(precio_unitario);
         pedidoExistente.setSubtotal(subtotal);
         pedidoExistente.setProducto(productoExistente);
         pedidoExistente.setEstado("ACTUALIZADO");
+        pedidoExistente.setTipoEntrega(tipoEntrega);
 
         Pedido pedidoActualizado = pedidoRepository.save(pedidoExistente);
 
