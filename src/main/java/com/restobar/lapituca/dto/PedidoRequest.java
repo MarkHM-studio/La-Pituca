@@ -1,9 +1,10 @@
 package com.restobar.lapituca.dto;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
+
+import java.util.Set;
 
 @Data
 public class PedidoRequest {
@@ -15,4 +16,7 @@ public class PedidoRequest {
     private Long comprobanteId;
     private Long productoId;
     private Long tipoEntregaId;
+    /*
+    private Set<Long> mesasId;
+    private String nombreGrupo;*/
 }

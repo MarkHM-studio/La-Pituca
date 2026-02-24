@@ -1,24 +1,18 @@
 package com.restobar.lapituca.service;
 
 import com.restobar.lapituca.dto.*;
-import com.restobar.lapituca.entity.Comprobante;
-import com.restobar.lapituca.entity.Pedido;
-import com.restobar.lapituca.entity.Producto;
-import com.restobar.lapituca.entity.TipoEntrega;
-import com.restobar.lapituca.exception.ComprobanteNotFoundException;
-import com.restobar.lapituca.exception.PedidoNotFoundException;
-import com.restobar.lapituca.exception.ProductoNotFoundException;
-import com.restobar.lapituca.exception.TipoEntregaNotFoundException;
-import com.restobar.lapituca.repository.ComprobanteRepository;
-import com.restobar.lapituca.repository.PedidoRepository;
-import com.restobar.lapituca.repository.ProductoRepository;
-import com.restobar.lapituca.repository.TipoEntregaRepository;
+import com.restobar.lapituca.entity.*;
+import com.restobar.lapituca.exception.*;
+import com.restobar.lapituca.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -28,42 +22,45 @@ public class PedidoService {
     private final ProductoRepository productoRepository;
     private final ComprobanteRepository comprobanteRepository;
     private final TipoEntregaRepository tipoEntregaRepository;
+    private final GrupoRepository grupoRepository;
+    private final MesaRepository mesaRepository;
+    private final DetalleMesaRepository detalleMesaRepository;
 
     @Transactional
     public PedidoDetalleResponse guardar(PedidoRequest request) {
 
+        if (request.getComprobanteId() == null) {
+            throw new RuntimeException("Debe crear un comprobante antes de agregar pedidos");
+        }
+
+        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
+                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new RuntimeException("No se pueden agregar pedidos a un comprobante cerrado");
+        }
+
         Producto producto = productoRepository.findById(request.getProductoId())
                 .orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
 
-        //validaciòn de stock
         if (producto.getStock() < request.getCantidad()) {
-            throw new RuntimeException("Stock insuficiente"); //Validar con exception personalizada
+            throw new RuntimeException("Stock insuficiente");
         }
 
-        //Creas o reasignas un comprobante
-        Comprobante comprobante;
-        if (request.getComprobanteId() != null) {
-            comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                    .orElseThrow(() -> new RuntimeException("Comprobante no encontrado"));
-            //Si el comprobante ya fue vendido → crear uno nuevo
-            if (comprobante.getFechaHora_venta() != null) {
-                comprobante = crearNuevoComprobante();
-            }
-        } else {
-            //Si se envia comprobanteId → crear uno nuevo
-            comprobante = crearNuevoComprobante();
-        }
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId())
+                .orElseThrow(() -> new TipoEntregaNotFoundException("Tipo de entrega no encontrado"));
+/*
+        // Asignar grupo SOLO si es comer y aún no tiene grupo
+        if (comprobante.getGrupo() == null) {
+            asignarGrupoYMesasSiEsComer(tipoEntrega, request, comprobante);
+        }*/
 
         BigDecimal precioUnitario = producto.getPrecio();
-        BigDecimal subtotal = precioUnitario.multiply(
-                BigDecimal.valueOf(request.getCantidad())
-        );
+        BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(request.getCantidad()));
 
-        //reducciòn de stock
+        // Descontar stock
         producto.setStock(producto.getStock() - request.getCantidad());
         productoRepository.save(producto);
-
-        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId()).orElseThrow(()->new TipoEntregaNotFoundException("Tipo de Entrega no encontrado"));
 
         Pedido pedido = new Pedido();
         pedido.setCantidad(request.getCantidad());
@@ -76,12 +73,54 @@ public class PedidoService {
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
-        recalcularTotalesComprobante(comprobante.getId()); //No puede ser request.getComprobanteId(), por que te arriesgas a que ese id de comprobante mandado, no exista.
+        recalcularTotalesComprobante(comprobante.getId());
 
         return mapToPedidoDetalleResponse(pedidoGuardado);
     }
 
+    private void recalcularTotalesComprobante(Long comprobanteId) {
+
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
+                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        //Buscar todos los pedidos pertenecientes a un comprobante
+        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
+
+        //Recorreme todos "subtotal" tantas veces, como pedidos pertenezcan a un comprobante
+        BigDecimal total = pedidos.stream()
+                .map(Pedido::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);//en cada recorrido autoincrementame el total
+
+        // IGV 18% (Perú)
+        BigDecimal igv = total.multiply(new BigDecimal("0.18"));
+
+        comprobante.setTotal(total);
+        comprobante.setIGV(igv);
+
+        comprobanteRepository.save(comprobante);
+    }
+
     private PedidoDetalleResponse mapToPedidoDetalleResponse(Pedido pedido) {
+
+        Grupo grupo = pedido.getComprobante().getGrupo();
+
+        GrupoResponse grupoResponse = null;
+
+        if (grupo != null) {
+            grupoResponse = new GrupoResponse(
+                    grupo.getId(),
+                    grupo.getNombre(),
+                    detalleMesaRepository.findByGrupo_Id(grupo.getId())
+                            .stream()
+                            .map(detalleMesa -> new DetalleMesaResponse(
+                                    detalleMesa.getId(),
+                                    detalleMesa.getGrupo().getId(),
+                                    detalleMesa.getMesa().getId()
+                            ))
+                            .toList()
+            );
+        }
+
         return new PedidoDetalleResponse(
                 pedido.getId(),
                 pedido.getCantidad(),
@@ -107,7 +146,8 @@ public class PedidoService {
                         pedido.getComprobante().getTotal(),
                         pedido.getComprobante().getIGV(),
                         pedido.getComprobante().getFechaHora_venta(),
-                        pedido.getComprobante().getEstado()
+                        pedido.getComprobante().getEstado(),
+                        grupoResponse
                 ),
                 new TipoEntregaResponse(
                         pedido.getTipoEntrega().getId(),
@@ -116,14 +156,6 @@ public class PedidoService {
                         pedido.getFechaHora_actualizacion()
                 )
         );
-    }
-
-    private Comprobante crearNuevoComprobante() {
-        Comprobante nuevo = new Comprobante();
-        nuevo.setTotal(BigDecimal.ZERO);
-        nuevo.setIGV(BigDecimal.ZERO);
-        nuevo.setEstado("ABIERTO");
-        return comprobanteRepository.save(nuevo);
     }
 
     public List<PedidoResponse> listarTodos() {
@@ -195,6 +227,29 @@ public class PedidoService {
             throw new PedidoNotFoundException("No hay pedidos para este comprobante");
         }
 
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        Grupo grupo = comprobante.getGrupo();
+
+        GrupoResponse grupoResponse = null;
+
+        if (grupo != null) {
+            grupoResponse = new GrupoResponse(
+                    grupo.getId(),
+                    grupo.getNombre(),
+                    detalleMesaRepository.findByGrupo_Id(grupo.getId())
+                            .stream()
+                            .map(detalleMesa -> new DetalleMesaResponse(
+                                    detalleMesa.getId(),
+                                    detalleMesa.getGrupo().getId(),
+                                    detalleMesa.getMesa().getId()
+                            ))
+                            .toList()
+            );
+        }
+
+        GrupoResponse finalGrupoResponse = grupoResponse; // Necesario para usar en lambda
+
         return pedidos.stream()
                 .map(p -> new PedidoDetalleResponse(
                         p.getId(),
@@ -221,7 +276,8 @@ public class PedidoService {
                                 p.getComprobante().getTotal(),
                                 p.getComprobante().getIGV(),
                                 p.getComprobante().getFechaHora_venta(),
-                                p.getComprobante().getEstado()
+                                p.getComprobante().getEstado(),
+                                finalGrupoResponse
                         ),
                         new TipoEntregaResponse(
                                 p.getTipoEntrega().getId(),
@@ -269,7 +325,7 @@ public class PedidoService {
         pedidoExistente.setPrecio_unitario(precio_unitario);
         pedidoExistente.setSubtotal(subtotal);
         pedidoExistente.setProducto(productoExistente);
-        pedidoExistente.setEstado("ACTUALIZADO");
+        pedidoExistente.setEstado("MODIFICADO");
         pedidoExistente.setTipoEntrega(tipoEntrega);
 
         Pedido pedidoActualizado = pedidoRepository.save(pedidoExistente);
@@ -278,37 +334,13 @@ public class PedidoService {
         /*
         Comprobante comprobanteExistente = comprobanteRepository.findById(pedidoExistente.getComprobante().getId()).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
         */
-
         recalcularTotalesComprobante(
                 pedidoExistente.getComprobante().getId()
         );
-
         /* En primer lugar, no te permitirìa cambiar, dado que el idComp. es foranea, y tendrìas que eliminar el comprobante primero
         pedidoExistente.setComprobante(comprobanteExistente);*/
 
         return mapToPedidoDetalleResponse(pedidoActualizado);
-    }
-
-    private void recalcularTotalesComprobante(Long comprobanteId) {
-
-        Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
-                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
-
-        //Buscar todos los pedidos pertenecientes a un comprobante
-        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
-
-        //Recorreme todos "subtotal" tantas veces, como pedidos pertenezcan a un comprobante
-        BigDecimal total = pedidos.stream()
-                .map(Pedido::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);//en cada recorrido autoincrementame el total
-
-        // IGV 18% (Perú)
-        BigDecimal igv = total.multiply(new BigDecimal("0.18"));
-
-        comprobante.setTotal(total);
-        comprobante.setIGV(igv);
-
-        comprobanteRepository.save(comprobante);
     }
 
     @Transactional

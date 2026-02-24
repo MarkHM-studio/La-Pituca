@@ -1,7 +1,6 @@
 package com.restobar.lapituca.dto;
 
 
-import jakarta.annotation.security.DenyAll;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,4 +17,5 @@ public class ComprobanteResponse {
     private BigDecimal IGV;
     private LocalDateTime fechaHora_venta;
     private String estado;
+    private GrupoResponse grupoResponse;
 }

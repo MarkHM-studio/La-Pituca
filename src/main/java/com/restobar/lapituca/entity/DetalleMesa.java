@@ -16,10 +16,13 @@ public class DetalleMesa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    //Relaciones
+    //DetalleMesa - Mesa
     @ManyToOne
     @JoinColumn(name = "id_mesa", nullable = false)
     private Mesa mesa;
 
+    //DetalleMesa - Grupo
     @ManyToOne
     @JoinColumn(name = "id_grupo", nullable = false)
     private Grupo grupo;

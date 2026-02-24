@@ -4,16 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MesaResponse {
-
+public class GrupoResponse {
     private Long id;
     private String nombre;
-    private String estado;
-    private LocalDateTime fechaHora_Registro;
-    private LocalDateTime fechaHora_Actualizacion;
+    private List<DetalleMesaResponse> detalleMesaResponse;
 }

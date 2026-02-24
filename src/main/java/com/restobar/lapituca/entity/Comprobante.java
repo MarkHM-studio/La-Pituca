@@ -39,6 +39,7 @@ public class Comprobante {
     @OneToMany(mappedBy = "comprobante")
     private List<Pedido> pedidos;
 
+    //Comprobante-Grupo
     @OneToOne
     @JoinColumn(name = "id_grupo")
     private Grupo grupo;

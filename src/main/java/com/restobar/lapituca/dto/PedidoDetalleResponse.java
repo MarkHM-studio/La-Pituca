@@ -18,5 +18,5 @@ public class PedidoDetalleResponse {
     private LocalDateTime fechaHoraRegistro;
     private ProductoResponse producto;      // DTO
     private ComprobanteResponse comprobante; // DTO
-    private TipoEntregaResponse tipoEntregaResponse;
+    private TipoEntregaResponse tipoEntregaResponse;//DTO
 }

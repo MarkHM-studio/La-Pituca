@@ -2,7 +2,6 @@ package com.restobar.lapituca.service;
 
 import com.restobar.lapituca.dto.MesaRequest;
 import com.restobar.lapituca.dto.MesaResponse;
-import com.restobar.lapituca.dto.PedidoResponse;
 import com.restobar.lapituca.entity.Mesa;
 import com.restobar.lapituca.exception.MesaNotFoundException;
 import com.restobar.lapituca.repository.MesaRepository;
@@ -20,11 +19,13 @@ public class MesaService {
     public MesaResponse guardar(MesaRequest request){
         Mesa mesa = new Mesa();
         mesa.setNombre(request.getNombre());
+        mesa.setEstado("DESOCUPADO");
         mesaRepository.save(mesa);
 
         return new MesaResponse(
                 mesa.getId(),
                 mesa.getNombre(),
+                mesa.getEstado(),
                 mesa.getFechaHora_registro(),
                 mesa.getFechaHora_actualizacion()
         );
@@ -36,10 +37,11 @@ public class MesaService {
                 .map(mesa -> new MesaResponse(
                         mesa.getId(),
                         mesa.getNombre(),
+                        mesa.getEstado(),
                         mesa.getFechaHora_registro(),
                         mesa.getFechaHora_actualizacion()
                 ))
-                .toList();
+                .toList();//Modificar para mostrar solo las mesas con estado = DESOCUPADO
     }
 
     public MesaResponse obtenerPorId(Long id){
@@ -47,6 +49,7 @@ public class MesaService {
         return new MesaResponse(
                 mesa.getId(),
                 mesa.getNombre(),
+                mesa.getEstado(),
                 mesa.getFechaHora_registro(),
                 mesa.getFechaHora_actualizacion()
         );
@@ -61,6 +64,7 @@ public class MesaService {
         return new MesaResponse(
                 mesa.getId(),
                 mesa.getNombre(),
+                mesa.getEstado(),
                 mesa.getFechaHora_registro(),
                 mesa.getFechaHora_actualizacion()
         );

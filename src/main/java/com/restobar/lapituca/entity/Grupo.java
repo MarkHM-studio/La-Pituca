@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "Grupo")
@@ -21,8 +22,8 @@ public class Grupo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5, max = 50)
-    @Column(nullable = false, length = 50)
+    @Size(min = 0, max = 50)
+    @Column(nullable = true, length = 50)
     private String nombre;
 
     @CreationTimestamp()
@@ -32,4 +33,10 @@ public class Grupo {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
+
+    //Relaciones
+    //Grupo - DetalleMesa
+    /*
+    @OneToMany
+    private List<DetalleMesa> detalleMesa;*/
 }
