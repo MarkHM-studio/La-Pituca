@@ -31,4 +31,10 @@ public class ComprobanteController {
         ComprobanteResponse comprobanteResponse = comprobanteService.asignarGrupoYMesasSiEsComer(request);
         return ResponseEntity.ok(comprobanteResponse);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelarPedido(@PathVariable Long id){
+        comprobanteService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
 }

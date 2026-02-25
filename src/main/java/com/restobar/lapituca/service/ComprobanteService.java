@@ -148,4 +148,12 @@ public class ComprobanteService {
                 grupoResponse
         );
     }
+
+    public void eliminar(Long id){
+        comprobanteRepository.deleteById(id);
+    }
+
+    public void registrarVenta(){
+        
+    }
 }
