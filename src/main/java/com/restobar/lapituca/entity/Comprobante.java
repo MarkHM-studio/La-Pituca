@@ -29,6 +29,10 @@ public class Comprobante {
     @Column(nullable = false, precision = 7, scale = 2)
     private BigDecimal IGV;
 
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime fechaHora_apertura;
+
     private LocalDateTime fechaHora_venta;
 
     @Column(nullable = false, length = 25)
@@ -43,5 +47,10 @@ public class Comprobante {
     @OneToOne
     @JoinColumn(name = "id_grupo")
     private Grupo grupo;
+
+    //Comprobante-Usuario
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
 }
 

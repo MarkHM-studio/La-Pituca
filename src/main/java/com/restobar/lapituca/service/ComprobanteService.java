@@ -4,18 +4,15 @@ import com.restobar.lapituca.dto.*;
 import com.restobar.lapituca.entity.*;
 import com.restobar.lapituca.exception.ComprobanteNotFoundException;
 import com.restobar.lapituca.exception.MesaNotFoundException;
-import com.restobar.lapituca.repository.ComprobanteRepository;
-import com.restobar.lapituca.repository.DetalleMesaRepository;
-import com.restobar.lapituca.repository.GrupoRepository;
-import com.restobar.lapituca.repository.MesaRepository;
+import com.restobar.lapituca.exception.UsuarioNotFoundException;
+import com.restobar.lapituca.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +22,12 @@ public class ComprobanteService {
     private final GrupoRepository grupoRepository;
     private final MesaRepository mesaRepository;
     private final DetalleMesaRepository detalleMesaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final TipoPagoRepository tipoPagoRepository;
+    private final TipoBilleteraVirtualRepository tipoBilleteraVirtualRepository;
+    private final PedidoRepository pedidoRepository;
+    private final MovimientoTipoPagoRepository movimientoTipoPagoRepository;
+
 
     @Transactional
     public ComprobanteResponse crearComprobante() {
@@ -50,7 +53,7 @@ public class ComprobanteService {
     public ComprobanteResponse asignarGrupoYMesasSiEsComer(AsignarMesasRequest request) {
 
         //Buscar comprobante
-        Comprobante comprobante = comprobanteRepository.findById(request.getId())
+        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
                 .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
 
         //Validar que tenga pedidos
@@ -153,7 +156,141 @@ public class ComprobanteService {
         comprobanteRepository.deleteById(id);
     }
 
-    public void registrarVenta(){
-        
+    @Transactional
+    public String registrarVenta(RegistrarVentaRequest request) {
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
+
+        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
+                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+
+        if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new RuntimeException("El comprobante ya está cerrado");
+        }
+
+        BigDecimal totalPagar = comprobante.getTotal();
+
+        Set<Long> tiposPago = request.getTipoPagoId();
+        List<BigDecimal> montos = request.getMontos();
+
+        if (tiposPago.size() != montos.size()) {
+            throw new RuntimeException("La cantidad de tipos de pago y montos no coincide");
+        }
+
+        List<Long> tiposPagoList = new ArrayList<>(tiposPago);
+
+        BigDecimal sumaPagos = montos.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // CASO 1: SOLO EFECTIVO (id = 1)
+        if (tiposPagoList.size() == 1 && tiposPagoList.contains(1L)) {
+
+            BigDecimal montoRecibido = montos.get(0);
+
+            List<BigDecimal> montoPagado = Collections.singletonList(totalPagar);
+
+            if (montoRecibido.compareTo(totalPagar) < 0) {
+                BigDecimal falta = totalPagar.subtract(montoRecibido);
+                throw new RuntimeException("Falta pagar: " + falta);
+            }
+
+            BigDecimal vuelto = montoRecibido.subtract(totalPagar);
+
+            registrarMovimientos(tiposPagoList, montoPagado, comprobante, request.getTipoBilleteraVirtualId());
+
+            cerrarComprobante(comprobante, usuario);
+
+            return "Pago realizado correctamente. Vuelto: " + vuelto;
+        }
+
+        // CASO 2: SOLO BILLETERA (id = 2)
+        if (tiposPagoList.size() == 1 && tiposPagoList.contains(2L)) {
+
+            BigDecimal montoRecibido = montos.get(0);
+
+            if (montoRecibido.compareTo(totalPagar) != 0) {
+                throw new RuntimeException("El monto debe coincidir exactamente con el total: " + totalPagar);
+            }
+
+            registrarMovimientos(tiposPagoList, montos, comprobante, request.getTipoBilleteraVirtualId());
+
+            cerrarComprobante(comprobante, usuario);
+
+            return "Pago realizado correctamente";
+        }
+
+        // CASO 3: MIXTO
+        if (tiposPagoList.size() == 2) {
+
+            if (sumaPagos.compareTo(totalPagar) < 0) {
+                BigDecimal falta = totalPagar.subtract(sumaPagos);
+                throw new RuntimeException("Falta pagar: " + falta);
+            }
+
+            BigDecimal vuelto = sumaPagos.subtract(totalPagar);
+
+            registrarMovimientos(tiposPagoList, montos, comprobante, request.getTipoBilleteraVirtualId());
+
+            cerrarComprobante(comprobante, usuario);
+
+            return "Pago realizado correctamente. Vuelto: " + vuelto;
+        }
+
+        throw new RuntimeException("Tipo de pago no válido");
+    }
+
+    private void registrarMovimientos(List<Long> tiposPago,
+                                      List<BigDecimal> montos,
+                                      Comprobante comprobante,
+                                      Long tipoBilleteraVirtualId) {
+
+        for (int i = 0; i < tiposPago.size(); i++) {
+
+            TipoPago tipoPago = tipoPagoRepository.findById(tiposPago.get(i))
+                    .orElseThrow(() -> new RuntimeException("TipoPago no encontrado"));
+
+            MovimientoTipoPago movimiento = new MovimientoTipoPago();
+            movimiento.setComprobante(comprobante);
+            movimiento.setTipoPago(tipoPago);
+            movimiento.setMonto(montos.get(i));
+
+            if (tiposPago.get(i) == 2L) {
+                TipoBilleteraVirtual billetera = tipoBilleteraVirtualRepository
+                        .findById(tipoBilleteraVirtualId)
+                        .orElseThrow(() -> new RuntimeException("TipoBilleteraVirtual no encontrado"));
+                movimiento.setTipoBilleteraVirtual(billetera);
+            }
+
+            movimientoTipoPagoRepository.save(movimiento);
+        }
+    }
+
+    private void cerrarComprobante(Comprobante comprobante, Usuario usuario) {
+
+        comprobante.setEstado("PAGADO");
+        comprobante.setFechaHora_venta(LocalDateTime.now());
+        comprobante.setUsuario(usuario);
+
+        comprobanteRepository.save(comprobante);
+
+        // Actualizar pedidos
+        comprobante.getPedidos().forEach(p -> {
+            p.setEstado("PAGADO");
+            pedidoRepository.save(p);
+        });
+
+        // Liberar mesas
+        if (comprobante.getGrupo() != null) {
+
+            List<DetalleMesa> detalles =
+                    detalleMesaRepository.findByGrupo_Id(comprobante.getGrupo().getId());
+
+            for (DetalleMesa d : detalles) {
+                Mesa mesa = d.getMesa();
+                mesa.setEstado("DESOCUPADO");
+                mesaRepository.save(mesa);
+            }
+        }
     }
 }

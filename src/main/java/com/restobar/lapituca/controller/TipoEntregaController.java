@@ -1,11 +1,10 @@
 package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.TipoEntregaRequest;
-import com.restobar.lapituca.entity.TipoEntrega;
+import com.restobar.lapituca.dto.TipoEntregaResponse;
 import com.restobar.lapituca.service.TipoEntregaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.web.ReactiveOffsetScrollPositionHandlerMethodArgumentResolver;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,31 +19,31 @@ public class TipoEntregaController {
     private final TipoEntregaService tipoEntregaService;
 
     @PostMapping
-    public ResponseEntity<TipoEntrega> crear(@Valid @RequestBody TipoEntregaRequest request){
+    public ResponseEntity<TipoEntregaResponse> crear(@Valid @RequestBody TipoEntregaRequest request){
 
-        TipoEntrega tipoEntrega = tipoEntregaService.guardar(request);
+       TipoEntregaResponse tipoEntregaResponse = tipoEntregaService.guardar(request);
 
-        URI location = URI.create("/api/tipoEntrega" + request.getId());
+        URI location = URI.create("/api/tipoEntrega/" + tipoEntregaResponse.getId());
 
-        return ResponseEntity.created(location).body(tipoEntrega);
+        return ResponseEntity.created(location).body(tipoEntregaResponse);
     }
 
     @GetMapping
-    public ResponseEntity<List<TipoEntrega>> listarTodos(){
-        List<TipoEntrega> tipoEntregas= tipoEntregaService.listarTodos();
-        return ResponseEntity.ok(tipoEntregas);
+    public ResponseEntity<List<TipoEntregaResponse>> listarTodos(){
+        List<TipoEntregaResponse> tiposEntregasResponse= tipoEntregaService.listarTodos();
+        return ResponseEntity.ok(tiposEntregasResponse);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoEntrega> obtenerPorId(@PathVariable Long id){
-        TipoEntrega tipoEntrega = tipoEntregaService.obtenerPorId(id);
-        return ResponseEntity.ok(tipoEntrega);
+    public ResponseEntity<TipoEntregaResponse> obtenerPorId(@PathVariable Long id){
+        TipoEntregaResponse tipoEntregaResponse = tipoEntregaService.obtenerPorId(id);
+        return ResponseEntity.ok(tipoEntregaResponse);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TipoEntrega> actualizar(@PathVariable Long id, @Valid @RequestBody TipoEntregaRequest request){
-        TipoEntrega tipoEntregaActualizado = tipoEntregaService.actualizar(id, request);
-        return ResponseEntity.ok(tipoEntregaActualizado);
+    public ResponseEntity<TipoEntregaResponse> actualizar(@PathVariable Long id, @Valid @RequestBody TipoEntregaRequest request){
+        TipoEntregaResponse tipoEntregaResponseActualizado = tipoEntregaService.actualizar(id, request);
+        return ResponseEntity.ok(tipoEntregaResponseActualizado);
     }
 
     @DeleteMapping("/{id}")

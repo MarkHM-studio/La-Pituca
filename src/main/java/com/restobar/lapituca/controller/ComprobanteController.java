@@ -2,6 +2,7 @@ package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.AsignarMesasRequest;
 import com.restobar.lapituca.dto.ComprobanteResponse;
+import com.restobar.lapituca.dto.RegistrarVentaRequest;
 import com.restobar.lapituca.service.ComprobanteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,5 +37,10 @@ public class ComprobanteController {
     public ResponseEntity<Void> cancelarPedido(@PathVariable Long id){
         comprobanteService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/registrar-venta")
+    public ResponseEntity<String> registrarVenta(@RequestBody RegistrarVentaRequest request) {
+        return ResponseEntity.ok(comprobanteService.registrarVenta(request));
     }
 }

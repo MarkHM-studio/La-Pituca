@@ -1,5 +1,6 @@
 package com.restobar.lapituca.exception;
 
+import com.restobar.lapituca.entity.TipoBilleteraVirtual;
 import com.restobar.lapituca.entity.TipoEntrega;
 import com.restobar.lapituca.service.ProductoService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -131,6 +132,39 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(TipoEntregaNotFoundException.class)
     public ResponseEntity<ErrorResponse> manejarTipoEntregaNoEncontrado(TipoEntregaNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NO_CONTENT.value(),
+                HttpStatus.NO_CONTENT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(TipoPagoNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarTipoPagoNoEncontrado(TipoPagoNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NO_CONTENT.value(),
+                HttpStatus.NO_CONTENT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(TipoBilleteraVirtualNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarTipoBilleteraVirtualNoEncontrado(TipoBilleteraVirtualNotFoundException ex, HttpServletRequest request){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NO_CONTENT.value(),
+                HttpStatus.NO_CONTENT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(UsuarioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> manejarUsuarioNoEncontrado(UsuarioNotFoundException ex, HttpServletRequest request){
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NO_CONTENT.value(),
                 HttpStatus.NO_CONTENT.getReasonPhrase(),

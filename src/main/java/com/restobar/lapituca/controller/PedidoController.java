@@ -3,7 +3,6 @@ package com.restobar.lapituca.controller;
 import com.restobar.lapituca.dto.PedidoDetalleResponse;
 import com.restobar.lapituca.dto.PedidoRequest;
 import com.restobar.lapituca.dto.PedidoResponse;
-import com.restobar.lapituca.entity.Pedido;
 import com.restobar.lapituca.service.PedidoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,5 +68,9 @@ public class PedidoController {
         return ResponseEntity.noContent().build();
     }
 
-
+    @PutMapping("/{id}/listo")
+    public ResponseEntity<String> marcarComoListo(@PathVariable Long id) {
+        pedidoService.marcarComoListo(id);
+        return ResponseEntity.ok("Pedido marcado como LISTO correctamente");
+    }
 }

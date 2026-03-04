@@ -10,7 +10,5 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MesaRequest {
-
-    private Long id;
     private String nombre;
 }

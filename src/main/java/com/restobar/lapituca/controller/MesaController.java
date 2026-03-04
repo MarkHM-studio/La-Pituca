@@ -2,7 +2,7 @@ package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.MesaRequest;
 import com.restobar.lapituca.dto.MesaResponse;
-import com.restobar.lapituca.entity.Mesa;
+import com.restobar.lapituca.dto.MesasOcupadasResponse;
 import com.restobar.lapituca.service.MesaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class MesaController {
     public ResponseEntity<MesaResponse> crear(@Valid @RequestBody MesaRequest request){
         MesaResponse mesaResponse = mesaService.guardar(request);
 
-        URI location = URI.create("/api/mesa" + request.getId());
+        URI location = URI.create("/api/mesa" + mesaResponse.getId());
 
         return ResponseEntity.created(location).body(mesaResponse);
     }
@@ -50,5 +50,10 @@ public class MesaController {
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         mesaService.eliminar(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/ocupadas")
+    public ResponseEntity<List<MesasOcupadasResponse>> obtenerMesasOcupadas() {
+        return ResponseEntity.ok(mesaService.obtenerMesasOcupadas());
     }
 }

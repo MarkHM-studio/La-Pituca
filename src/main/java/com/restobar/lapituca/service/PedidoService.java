@@ -9,10 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +19,6 @@ public class PedidoService {
     private final ProductoRepository productoRepository;
     private final ComprobanteRepository comprobanteRepository;
     private final TipoEntregaRepository tipoEntregaRepository;
-    private final GrupoRepository grupoRepository;
-    private final MesaRepository mesaRepository;
     private final DetalleMesaRepository detalleMesaRepository;
 
     @Transactional
@@ -49,7 +44,7 @@ public class PedidoService {
 
         TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId())
                 .orElseThrow(() -> new TipoEntregaNotFoundException("Tipo de entrega no encontrado"));
-/*
+        /*
         // Asignar grupo SOLO si es comer y aún no tiene grupo
         if (comprobante.getGrupo() == null) {
             asignarGrupoYMesasSiEsComer(tipoEntrega, request, comprobante);
@@ -362,4 +357,17 @@ public class PedidoService {
         recalcularTotalesComprobante(comprobanteId);
     }
 
+    @Transactional
+    public void marcarComoListo(Long pedidoId) {
+
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+
+        if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) {
+            throw new RuntimeException("No se puede modificar un pedido PAGADO");
+        }
+
+        pedido.setEstado("LISTO");
+        pedidoRepository.save(pedido);
+    }
 }

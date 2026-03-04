@@ -10,7 +10,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AsignarMesasRequest {
-    private Long id;
+    private Long comprobanteId;
     private Set<Long> mesasId;
     private String nombreGrupo;
 }
