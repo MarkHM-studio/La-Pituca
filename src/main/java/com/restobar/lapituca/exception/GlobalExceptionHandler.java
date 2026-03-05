@@ -1,19 +1,12 @@
 package com.restobar.lapituca.exception;
 
-import com.restobar.lapituca.entity.TipoBilleteraVirtual;
-import com.restobar.lapituca.entity.TipoEntrega;
-import com.restobar.lapituca.service.ProductoService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -56,170 +49,39 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
-    @ExceptionHandler(MarcaNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarMarcaNoEncontrada(
-            MarcaNotFoundException ex,
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<ErrorResponse> handleApiException(
+            ApiException ex,
             HttpServletRequest request) {
 
+        ErrorCode code = ex.getErrorCode();
+
         ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                code.getStatus().value(),
+                code.getStatus().getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI()
         );
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(CategoriaNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarCategoriaNoEncontrada(
-            CategoriaNotFoundException ex,
-            HttpServletRequest request) {
-
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(ProductoNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarProductoNoEncontrado(ProductoNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(PedidoNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarPedidoNoEncontrado(PedidoNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(ComprobanteNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarComprobanteNoEncontrado(ComprobanteNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(MesaNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarMesaNoEncontrada(MesaNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                HttpStatus.NOT_FOUND.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(TipoEntregaNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarTipoEntregaNoEncontrado(TipoEntregaNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NO_CONTENT.value(),
-                HttpStatus.NO_CONTENT.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(TipoPagoNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarTipoPagoNoEncontrado(TipoPagoNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NO_CONTENT.value(),
-                HttpStatus.NO_CONTENT.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(TipoBilleteraVirtualNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarTipoBilleteraVirtualNoEncontrado(TipoBilleteraVirtualNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NO_CONTENT.value(),
-                HttpStatus.NO_CONTENT.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-
-    @ExceptionHandler(UsuarioNotFoundException.class)
-    public ResponseEntity<ErrorResponse> manejarUsuarioNoEncontrado(UsuarioNotFoundException ex, HttpServletRequest request){
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NO_CONTENT.value(),
-                HttpStatus.NO_CONTENT.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return ResponseEntity
+                .status(code.getStatus())
+                .body(error);
     }
 
     /*
-    // Captura global para cualquier excepción no controlada
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> manejarErroresGenerales(
+    public ResponseEntity<ErrorResponse> manejarErrorGeneral(
             Exception ex,
             HttpServletRequest request) {
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
-                "Error interno del servidor",
+                "Ocurrió un error inesperado",
                 request.getRequestURI()
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }*/
-
-}
-/*
-@ExceptionHandler(MethodArgumentNotValidException.class)
-public ResponseEntity<Map<String, String>> manejarValidaciones(MethodArgumentNotValidException ex) {
-
-    Map<String, String> errores = new HashMap<>();
-
-    ex.getBindingResult().getFieldErrors().forEach(error ->
-            errores.put(error.getField(), error.getDefaultMessage())
-    );
-
-    return ResponseEntity.badRequest().body(errores);
 }
 
-// "api/entidad/abc"
-@ExceptionHandler(MethodArgumentTypeMismatchException.class)
-public ResponseEntity<Map<String, String>> manejarTypeMismatch(MethodArgumentTypeMismatchException ex) {
-
-    Map<String, String> error = new HashMap<>();
-    error.put("error", "El ID debe ser numérico y válido");
-
-    return ResponseEntity.badRequest().body(error);
-}
-
-@ExceptionHandler(MarcaNotFoundException.class)
-public ResponseEntity<Map<String, String>> manejarMarcaNoEncontrada(MarcaNotFoundException ex) {
-
-    Map<String, String> error = new HashMap<>();
-    error.put("error", ex.getMessage());
-
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-}*/

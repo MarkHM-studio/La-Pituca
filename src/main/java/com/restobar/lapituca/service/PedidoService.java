@@ -364,10 +364,24 @@ public class PedidoService {
                 .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
 
         if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) {
-            throw new RuntimeException("No se puede modificar un pedido PAGADO");
+            throw new PedidoNotFoundException("No se puede modificar un pedido PAGADO");
         }
 
         pedido.setEstado("LISTO");
+        pedidoRepository.save(pedido);
+    }
+
+    @Transactional
+    public void marcarComoPreparando(Long pedidoId) {
+
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+
+        if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) {
+            throw new RuntimeException("No se puede modificar un pedido PAGADO");
+        }
+
+        pedido.setEstado("PREPARANDO");
         pedidoRepository.save(pedido);
     }
 }

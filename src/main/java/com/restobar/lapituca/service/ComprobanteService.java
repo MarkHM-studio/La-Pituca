@@ -2,9 +2,7 @@ package com.restobar.lapituca.service;
 
 import com.restobar.lapituca.dto.*;
 import com.restobar.lapituca.entity.*;
-import com.restobar.lapituca.exception.ComprobanteNotFoundException;
-import com.restobar.lapituca.exception.MesaNotFoundException;
-import com.restobar.lapituca.exception.UsuarioNotFoundException;
+import com.restobar.lapituca.exception.*;
 import com.restobar.lapituca.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,13 +52,13 @@ public class ComprobanteService {
 
         //Buscar comprobante
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id:" + request.getComprobanteId() + "no encontrado"));
 
         //Validar que tenga pedidos
         List<Pedido> pedidos = comprobante.getPedidos();
 
         if (pedidos == null || pedidos.isEmpty()) {
-            throw new RuntimeException("No se puede asignar mesas a un comprobante sin pedidos");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede asignar mesas a un comprobante sin pedidos");
         }
 
         //Verificar si al menos 1 pedido es tipo COMER
@@ -72,14 +70,14 @@ public class ComprobanteService {
 
         //Si ninguno es COMER, no se asigna grupo (regla de negocio correcta)
         if (!tienePedidoComer) {
-            throw new RuntimeException(
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,
                     "No se puede asignar mesas porque todos los pedidos son para LLEVAR"
             );
         }
 
         //Si ya tiene grupo, no crear otro (evita duplicados)
         if (comprobante.getGrupo() != null) {
-            throw new RuntimeException("Este comprobante ya tiene un grupo asignado");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Este comprobante ya tiene un grupo asignado");
         }
 
         //Crear grupo
