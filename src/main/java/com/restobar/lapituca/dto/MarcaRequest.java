@@ -6,12 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MesaRequest {
+public class MarcaRequest {
     @NotBlank(message = "El nombre es obligatorio")
     @Size(min =5, max = 50, message = "El nombre debe tener entre 5 y 50 carácteres")
     private String nombre;

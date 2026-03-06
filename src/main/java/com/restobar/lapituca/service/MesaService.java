@@ -7,7 +7,8 @@ import com.restobar.lapituca.entity.Comprobante;
 import com.restobar.lapituca.entity.DetalleMesa;
 import com.restobar.lapituca.entity.Grupo;
 import com.restobar.lapituca.entity.Mesa;
-import com.restobar.lapituca.exception.MesaNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.ComprobanteRepository;
 import com.restobar.lapituca.repository.DetalleMesaRepository;
 import com.restobar.lapituca.repository.MesaRepository;
@@ -25,6 +26,11 @@ public class MesaService {
     private final ComprobanteRepository comprobanteRepository;
 
     public MesaResponse guardar(MesaRequest request){
+
+        if (mesaRepository.existsByNombre(request.getNombre())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe una Mesa con este nombre");
+        }
+
         Mesa mesa = new Mesa();
         mesa.setNombre(request.getNombre());
         mesa.setEstado("DESOCUPADO");
@@ -53,7 +59,7 @@ public class MesaService {
     }
 
     public MesaResponse obtenerPorId(Long id){
-        Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new MesaNotFoundException("Mesa no encontrada"));
+        Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Mesa con id: "+id+" no encontrada"));
         return new MesaResponse(
                 mesa.getId(),
                 mesa.getNombre(),
@@ -65,7 +71,12 @@ public class MesaService {
 
     public MesaResponse actualizar(Long id, MesaRequest request){
 
-        Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new MesaNotFoundException("Mesa no encontrada"));
+        Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Mesa con id: "+id+" no encontrada"));
+
+        if (mesaRepository.existsByNombreAndIdNot(request.getNombre(), id)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe una Mesa con este nombre");
+        }
+
         mesa.setNombre(request.getNombre());
         mesaRepository.save(mesa);
 
@@ -79,7 +90,8 @@ public class MesaService {
     }
 
     public void eliminar(Long id){
-        mesaRepository.deleteById(id);
+        Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Mesa con id: "+id+" no encontrada"));
+        mesaRepository.delete(mesa);
     }
 
     public List<MesasOcupadasResponse> obtenerMesasOcupadas() {

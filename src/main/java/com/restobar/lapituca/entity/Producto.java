@@ -23,15 +23,13 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5, max = 50)
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @Positive
-    @Column(nullable = false) @Digits(integer = 5, fraction = 2)
+    @Column(nullable = false)
+    @Digits(integer = 5, fraction = 2)
     private BigDecimal precio;
 
-    @Min(value = 0)
     @Column(nullable = false)
     private Integer stock;
 

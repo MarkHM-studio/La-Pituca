@@ -1,9 +1,6 @@
 package com.restobar.lapituca.dto;
 
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -11,14 +8,17 @@ import java.math.BigDecimal;
 @Data
 public class ProductoRequest {
 
-    @Size(min = 5, max = 50)
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(min = 5, max = 50, message = "El nombre debe tener entre 5 y 50 caracteres")
     private String nombre;
 
-    @Positive
-    @Digits(integer = 5, fraction = 2)
+    @NotNull(message = "El precio es obligatorio")
+    @Positive(message = "El precio debe ser positivo")
+    @Digits(integer = 5, fraction = 2, message = "El precio no puede tener más de 5 dígitos enteros y 2 decimales")
     private BigDecimal precio;
 
-    @Min(0)
+    @NotNull(message = "El stock es obligatorio")
+    @Min(value = 0, message = "El stock no puede ser negativo")
     private Integer stock;
 
     private Long categoriaId;

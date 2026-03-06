@@ -3,7 +3,8 @@ package com.restobar.lapituca.service;
 import com.restobar.lapituca.dto.TipoEntregaRequest;
 import com.restobar.lapituca.dto.TipoEntregaResponse;
 import com.restobar.lapituca.entity.TipoEntrega;
-import com.restobar.lapituca.exception.TipoEntregaNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.TipoEntregaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,11 @@ public class  TipoEntregaService {
     private final TipoEntregaRepository tipoEntregaRepository;
 
     public TipoEntregaResponse guardar(TipoEntregaRequest request){
+
+        if (tipoEntregaRepository.existsByNombre(request.getNombre())){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Tipo de Entrega con este nombre");
+        }
+
         TipoEntrega tipoEntrega = new TipoEntrega();
         tipoEntrega.setNombre(request.getNombre());
         tipoEntregaRepository.save(tipoEntrega);
@@ -38,7 +44,7 @@ public class  TipoEntregaService {
     }
 
     public TipoEntregaResponse obtenerPorId(Long id){
-        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(id).orElseThrow(()-> new TipoEntregaNotFoundException("Tipo de Entrega no encontrada"));
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Entrega con id: "+id+" no encontrada"));
         return new TipoEntregaResponse(
                 tipoEntrega.getId(),
                 tipoEntrega.getNombre(),
@@ -48,7 +54,12 @@ public class  TipoEntregaService {
     }
 
     public TipoEntregaResponse actualizar(Long id, TipoEntregaRequest request){
-        TipoEntrega tipoEntregaExistente = tipoEntregaRepository.findById(id).orElseThrow(()-> new TipoEntregaNotFoundException("Tipo de Entrega no encontrada"));
+        TipoEntrega tipoEntregaExistente = tipoEntregaRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Entrega con id: "+id+" no encontrada"));
+
+        if (tipoEntregaRepository.existsByNombreAndIdNot(request.getNombre(), id)){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Tipo de Entrega con este nombre");
+        }
+
         tipoEntregaExistente.setNombre(request.getNombre());
         tipoEntregaRepository.save(tipoEntregaExistente);
         return new TipoEntregaResponse(
@@ -61,8 +72,8 @@ public class  TipoEntregaService {
 
     public void eliminar(Long id){
         //Verificar que existe
-        tipoEntregaRepository.findById(id).orElseThrow(()-> new TipoEntregaNotFoundException("Tipo de Entrega no encontrada"));
-        tipoEntregaRepository.deleteById(id);
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Entrega con id: "+id+" no encontrada"));
+        tipoEntregaRepository.delete(tipoEntrega);
     }
 
 }

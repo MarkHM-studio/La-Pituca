@@ -21,11 +21,9 @@ public class Mesa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5, max = 50)
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @Size(min = 5, max = 25)
     @Column(nullable = false, length = 25)
     private String estado;
 

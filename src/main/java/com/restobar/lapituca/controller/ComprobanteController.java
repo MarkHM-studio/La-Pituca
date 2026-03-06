@@ -7,6 +7,7 @@ import com.restobar.lapituca.service.ComprobanteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.net.URI;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/comprobante")
+@Validated
 public class ComprobanteController {
 
     private final ComprobanteService comprobanteService;
@@ -22,7 +24,7 @@ public class ComprobanteController {
     public ResponseEntity<ComprobanteResponse> crear() {
         ComprobanteResponse comprobanteResponse = comprobanteService.crearComprobante();
 
-        URI location = URI.create("/api/comprobante" + comprobanteResponse.getId());
+        URI location = URI.create("/api/comprobante/" + comprobanteResponse.getId());
 
         return ResponseEntity.created(location).body(comprobanteResponse);
     }

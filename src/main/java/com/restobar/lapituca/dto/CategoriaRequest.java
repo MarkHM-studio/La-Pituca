@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoriaRequest {
     @NotBlank(message = "El nombre es obligatorio")
-    @Size(max = 50, message = "El nombre no puede tener más de 50 caracteres")
+    @Size(min =5, max = 50, message = "El nombre debe tener entre 5 y 50 carácteres")
     private String nombre;
 }

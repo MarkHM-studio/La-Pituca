@@ -20,7 +20,6 @@ public class TipoBilleteraVirtual {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 4, max = 50)
     @Column(nullable = false, length = 50)
     private String nombre;
 

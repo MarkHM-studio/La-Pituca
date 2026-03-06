@@ -25,31 +25,30 @@ public class PedidoService {
     public PedidoDetalleResponse guardar(PedidoRequest request) {
 
         if (request.getComprobanteId() == null) {
-            throw new RuntimeException("Debe crear un comprobante antes de agregar pedidos");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Debe crear un comprobante antes de agregar pedidos");
         }
 
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
 
         if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
-            throw new RuntimeException("No se pueden agregar pedidos a un comprobante cerrado");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se pueden agregar pedidos a un comprobante cerrado");
         }
 
         Producto producto = productoRepository.findById(request.getProductoId())
-                .orElseThrow(() -> new ProductoNotFoundException("Producto no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Producto con id: "+request.getProductoId()+" no encontrado"));
 
         if (producto.getStock() < request.getCantidad()) {
-            throw new RuntimeException("Stock insuficiente");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Stock insuficiente");
         }
 
         TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId())
-                .orElseThrow(() -> new TipoEntregaNotFoundException("Tipo de entrega no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de entrega con id: "+request.getTipoEntregaId()+" no encontrado"));
         /*
         // Asignar grupo SOLO si es comer y aún no tiene grupo
         if (comprobante.getGrupo() == null) {
             asignarGrupoYMesasSiEsComer(tipoEntrega, request, comprobante);
         }*/
-
         BigDecimal precioUnitario = producto.getPrecio();
         BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(request.getCantidad()));
 
@@ -76,7 +75,7 @@ public class PedidoService {
     private void recalcularTotalesComprobante(Long comprobanteId) {
 
         Comprobante comprobante = comprobanteRepository.findById(comprobanteId)
-                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+comprobanteId+" no encontrado"));
 
         //Buscar todos los pedidos pertenecientes a un comprobante
         List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
@@ -129,11 +128,15 @@ public class PedidoService {
                         pedido.getProducto().getStock(),
                         new CategoriaResponse(
                                 pedido.getProducto().getCategoria().getId(),
-                                pedido.getProducto().getCategoria().getNombre()
+                                pedido.getProducto().getCategoria().getNombre(),
+                                pedido.getProducto().getCategoria().getFechaHora_registro(),
+                                pedido.getProducto().getCategoria().getFechaHora_actualizacion()
                         ),
                         new MarcaResponse(
                                 pedido.getProducto().getMarca().getId(),
-                                pedido.getProducto().getMarca().getNombre()
+                                pedido.getProducto().getMarca().getNombre(),
+                                pedido.getProducto().getMarca().getFechaHora_registro(),
+                                pedido.getProducto().getMarca().getFechaHora_actualizacion()
                         )
                 ),
                 new ComprobanteResponse(
@@ -174,7 +177,7 @@ public class PedidoService {
     public PedidoResponse obtenerPorId(Long id){
 
         Pedido p = pedidoRepository.findById(id)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+id+" no encontrado"));
 
         return new PedidoResponse(
                         p.getId(),
@@ -192,15 +195,23 @@ public class PedidoService {
     public PedidoDetalleResponse obtenerDetallePorId(Long id) {
 
         Pedido p = pedidoRepository.findById(id)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+id+" no encontrado"));
 
         return mapToPedidoDetalleResponse(p);
     }
 
-    public List<PedidoResponse> obtenerPorComprobanteId(Long comprobanteId){
+    public List<PedidoResponse> obtenerPorComprobanteId(Long comprobanteId) {
 
-        return pedidoRepository.findByComprobante_Id(comprobanteId)
-                .stream()
+        comprobanteRepository.findById(comprobanteId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + comprobanteId + " no encontrado"));
+
+        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
+
+        if (pedidos.isEmpty()) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No hay pedidos para este comprobante");
+        }
+
+        return pedidos.stream()
                 .map(p -> new PedidoResponse(
                         p.getId(),
                         p.getCantidad(),
@@ -216,13 +227,14 @@ public class PedidoService {
     }
 
     public List<PedidoDetalleResponse> obtenerDetallePorComprobanteId(Long comprobanteId) {
+
+        Comprobante comprobante = comprobanteRepository.findById(comprobanteId).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+comprobanteId+" no encontrado"));
+
         List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
 
         if (pedidos.isEmpty()) {
-            throw new PedidoNotFoundException("No hay pedidos para este comprobante");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No hay pedidos para este comprobante");
         }
-
-        Comprobante comprobante = comprobanteRepository.findById(comprobanteId).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
 
         Grupo grupo = comprobante.getGrupo();
 
@@ -259,11 +271,15 @@ public class PedidoService {
                                 p.getProducto().getStock(),
                                 new CategoriaResponse(
                                         p.getProducto().getCategoria().getId(),
-                                        p.getProducto().getCategoria().getNombre()
+                                        p.getProducto().getCategoria().getNombre(),
+                                        p.getProducto().getCategoria().getFechaHora_registro(),
+                                        p.getProducto().getCategoria().getFechaHora_actualizacion()
                                 ),
                                 new MarcaResponse(
                                         p.getProducto().getMarca().getId(),
-                                        p.getProducto().getMarca().getNombre()
+                                        p.getProducto().getMarca().getNombre(),
+                                        p.getProducto().getMarca().getFechaHora_registro(),
+                                        p.getProducto().getMarca().getFechaHora_actualizacion()
                                 )
                         ),
                         new ComprobanteResponse(
@@ -287,7 +303,7 @@ public class PedidoService {
     @Transactional
     public PedidoDetalleResponse actualizar(Long id, PedidoRequest request){
 
-        Pedido pedidoExistente = pedidoRepository.findById(id).orElseThrow(()-> new PedidoNotFoundException("Pedido no encontrado"));
+        Pedido pedidoExistente = pedidoRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+id+" no encontrado"));
 
         //Obtener producto anterior y cantidad de cuanto se pidiò para devolver el stock , posteriormente
         Producto productoAnterior = pedidoExistente.getProducto();
@@ -297,11 +313,11 @@ public class PedidoService {
         productoAnterior.setStock(productoAnterior.getStock() + cantidadAnterior);
         productoRepository.save(productoAnterior);
 
-        Producto productoExistente = productoRepository.findById(request.getProductoId()).orElseThrow(()-> new ProductoNotFoundException("Producto no encontrado"));
+        Producto productoExistente = productoRepository.findById(request.getProductoId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Producto con id: "+request.getProductoId()+" no encontrado"));
 
         //Verificar stock (aunque en un principio este producto no debería estar disponible ni aparecer en el frontend
         if (productoExistente.getStock() < request.getCantidad()) {
-            throw new RuntimeException("Stock insuficiente"); //Reemplazar por exception personalizada
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Stock insuficiente"); //Reemplazar por exception personalizada
         }
 
         //Descontar stock
@@ -314,7 +330,7 @@ public class PedidoService {
         BigDecimal precio_unitario = productoExistente.getPrecio();
         BigDecimal subtotal = precio_unitario.multiply(BigDecimal.valueOf(request.getCantidad()));
 
-        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId()).orElseThrow(()->new TipoEntregaNotFoundException("Tipo de Entrega no encontrado"));
+        TipoEntrega tipoEntrega = tipoEntregaRepository.findById(request.getTipoEntregaId()).orElseThrow(()->new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Tipo de Entrega con id: "+request.getTipoEntregaId()+" no encontrado"));
 
         pedidoExistente.setCantidad(request.getCantidad());
         pedidoExistente.setPrecio_unitario(precio_unitario);
@@ -327,7 +343,7 @@ public class PedidoService {
 
         //Ya no se coloca, por que si el pedido existe, el comprobante tambièn (por las relaciones), que no admiten que Id_comprobante, en Pedido, sea nulo
         /*
-        Comprobante comprobanteExistente = comprobanteRepository.findById(pedidoExistente.getComprobante().getId()).orElseThrow(()-> new ComprobanteNotFoundException("Comprobante no encontrado"));
+        Comprobante comprobanteExistente = comprobanteRepository.findById(pedidoExistente.getComprobante().getId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+pedidoExistente.getComprobante().getId()+" no encontrado"));
         */
         recalcularTotalesComprobante(
                 pedidoExistente.getComprobante().getId()
@@ -342,7 +358,7 @@ public class PedidoService {
     public void eliminar(Long id) {
 
         Pedido pedido = pedidoRepository.findById(id)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+id+" no encontrado"));
 
         // Devolver stock
         Producto producto = pedido.getProducto();
@@ -361,10 +377,10 @@ public class PedidoService {
     public void marcarComoListo(Long pedidoId) {
 
         Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+pedidoId+" no encontrado"));
 
         if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) {
-            throw new PedidoNotFoundException("No se puede modificar un pedido PAGADO");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se puede modificar un pedido PAGADO");
         }
 
         pedido.setEstado("LISTO");
@@ -375,10 +391,10 @@ public class PedidoService {
     public void marcarComoPreparando(Long pedidoId) {
 
         Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new PedidoNotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Pedido con id: "+pedidoId+" no encontrado"));
 
         if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) {
-            throw new RuntimeException("No se puede modificar un pedido PAGADO");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se puede modificar un pedido PAGADO");
         }
 
         pedido.setEstado("PREPARANDO");

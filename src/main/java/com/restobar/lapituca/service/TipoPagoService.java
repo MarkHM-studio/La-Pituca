@@ -3,7 +3,8 @@ package com.restobar.lapituca.service;
 import com.restobar.lapituca.dto.TipoPagoRequest;
 import com.restobar.lapituca.dto.TipoPagoResponse;
 import com.restobar.lapituca.entity.TipoPago;
-import com.restobar.lapituca.exception.TipoPagoNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.TipoPagoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,9 @@ public class TipoPagoService {
     private final TipoPagoRepository tipoPagoRepository;
 
     public TipoPagoResponse guardar(TipoPagoRequest request){
+        if (tipoPagoRepository.existsByNombre(request.getNombre())){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Tipo de Pago con este nombre");
+        }
         TipoPago tipoPago = new TipoPago();
         tipoPago.setNombre(request.getNombre());
         tipoPagoRepository.save(tipoPago);
@@ -39,7 +43,7 @@ public class TipoPagoService {
     }
 
     public TipoPagoResponse obtenerPorId(Long id){
-        TipoPago tipoPago = tipoPagoRepository.findById(id).orElseThrow(()-> new TipoPagoNotFoundException("Tipo de Pago no encontrada"));
+        TipoPago tipoPago = tipoPagoRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Pago con id: "+id+" no encontrada"));
         return new TipoPagoResponse(
                 tipoPago.getId(),
                 tipoPago.getNombre(),
@@ -49,7 +53,12 @@ public class TipoPagoService {
     }
 
     public TipoPagoResponse actualizar(Long id, TipoPagoRequest request){
-        TipoPago tipoPagoExistente = tipoPagoRepository.findById(id).orElseThrow(()-> new TipoPagoNotFoundException("Tipo de Pago no encontrada"));
+        TipoPago tipoPagoExistente = tipoPagoRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Pago con id: "+id+" no encontrada"));
+
+        if (tipoPagoRepository.existsByNombreAndIdNot(request.getNombre(), id)){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Tipo de Pago con este nombre");
+        }
+
         tipoPagoExistente.setNombre(request.getNombre());
         tipoPagoRepository.save(tipoPagoExistente);
         return new TipoPagoResponse(
@@ -62,7 +71,7 @@ public class TipoPagoService {
 
     public void eliminar(Long id){
         //Verificar que existe
-        tipoPagoRepository.findById(id).orElseThrow(()-> new TipoPagoNotFoundException("Tipo de Pago no encontrada"));
-        tipoPagoRepository.deleteById(id);
+        TipoPago tipoPago = tipoPagoRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Tipo de Pago con id: "+id+" no encontrada"));
+        tipoPagoRepository.delete(tipoPago);
     }
 }

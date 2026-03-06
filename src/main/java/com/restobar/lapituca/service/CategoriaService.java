@@ -1,13 +1,15 @@
 package com.restobar.lapituca.service;
 
+import com.restobar.lapituca.dto.CategoriaRequest;
+import com.restobar.lapituca.dto.CategoriaResponse;
 import com.restobar.lapituca.entity.Categoria;
-import com.restobar.lapituca.exception.CategoriaNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.CategoriaRepository;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -16,29 +18,75 @@ public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
 
-    public Categoria guardar(Categoria categoria){
-        return categoriaRepository.save(categoria);
+    public CategoriaResponse guardar(CategoriaRequest request){
+
+        if (categoriaRepository.existsByNombre(request.getNombre())) {
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "Ya existe una Categoría con ese nombre"
+            );
+        }
+        Categoria categoria = new Categoria();
+        categoria.setNombre(request.getNombre());
+        categoriaRepository.save(categoria);
+
+        return new CategoriaResponse(
+                categoria.getId(),
+                categoria.getNombre(),
+                categoria.getFechaHora_registro(),
+                categoria.getFechaHora_actualizacion()
+        );
     }
 
-    public List<Categoria> listarTodos(){
-        return categoriaRepository.findAll();
+    public List<CategoriaResponse> listarTodos(){
+
+        return categoriaRepository.findAll().stream().map(
+                categoria -> (new CategoriaResponse(
+                        categoria.getId(),
+                        categoria.getNombre(),
+                        categoria.getFechaHora_registro(),
+                        categoria.getFechaHora_actualizacion()
+                ))
+        ).toList();
     }
 
-    public Categoria obtenerPorId(Long id){
-        return categoriaRepository.findById(id).orElseThrow(()
-                -> new CategoriaNotFoundException("Categoria no encntrada"));
+    public CategoriaResponse obtenerPorId(Long id){
+        Categoria categoria = categoriaRepository.findById(id).orElseThrow(()
+                -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Categoria con id: " + id + " no encontrada"));
+        return new CategoriaResponse(
+                categoria.getId(),
+                categoria.getNombre(),
+                categoria.getFechaHora_registro(),
+                categoria.getFechaHora_actualizacion()
+        );
     }
 
-    public Categoria actualizar(Long id, Categoria categoria){
+    public CategoriaResponse actualizar(Long id, CategoriaRequest request){
+
         Categoria categoriaExistente = categoriaRepository.findById(id).orElseThrow(()
-                -> new CategoriaNotFoundException("Categoria no encontrada"));
+                -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Categoria con id: " + id + " no encontrada"));
 
-        categoriaExistente.setNombre(categoria.getNombre());
+        if (categoriaRepository.existsByNombreAndIdNot(request.getNombre(), id)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe una categoría con ese nombre"
+            );
+        }
 
-        return categoriaRepository.save(categoriaExistente);
+        categoriaExistente.setNombre(request.getNombre());
+        Categoria categoriaActualizada =categoriaRepository.save(categoriaExistente);
+
+        return new CategoriaResponse(
+                categoriaActualizada.getId(),
+                categoriaActualizada.getNombre(),
+                categoriaActualizada.getFechaHora_registro(),
+                categoriaActualizada.getFechaHora_actualizacion()
+        );
     }
 
     public void eliminar(Long id){
-        categoriaRepository.deleteById(id);
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Categoria con id: " + id + " no encontrada"
+                ));
+
+        categoriaRepository.delete(categoria);
     }
 }

@@ -6,5 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TipoEntregaRepository extends JpaRepository<TipoEntrega, Long> {
-
+    boolean existsByNombre(String nombre);
+    boolean existsByNombreAndIdNot(String nombre, Long id);
 }

@@ -3,7 +3,8 @@ package com.restobar.lapituca.service;
 import com.restobar.lapituca.dto.UsuarioRequest;
 import com.restobar.lapituca.dto.UsuarioResponse;
 import com.restobar.lapituca.entity.Usuario;
-import com.restobar.lapituca.exception.UsuarioNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,11 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
 
     public UsuarioResponse guardar(UsuarioRequest request){
+
+        if (usuarioRepository.existsByNombre(request.getNombre())){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Usuario con este nombre");
+        }
+
         Usuario usuario = new Usuario();
         usuario.setNombre(request.getNombre());
         usuario.setPassword(request.getPassword());
@@ -48,7 +54,7 @@ public class UsuarioService {
     }
 
     public UsuarioResponse obtenerPorId(Long id){
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow(()-> new UsuarioNotFoundException("Tipo de Pago no encontrada"));
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+id+" no encontrada"));
         return new UsuarioResponse(
                 usuario.getId(),
                 usuario.getNombre(),
@@ -61,7 +67,12 @@ public class UsuarioService {
     }
 
     public UsuarioResponse actualizar(Long id, UsuarioRequest request){
-        Usuario usuarioExistente = usuarioRepository.findById(id).orElseThrow(()-> new UsuarioNotFoundException("Tipo de Pago no encontrada"));
+        Usuario usuarioExistente = usuarioRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+id+" no encontrada"));
+
+        if (usuarioRepository.existsByNombreAndIdNot(request.getNombre(), id)){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Usuario con este nombre");
+        }
+
         usuarioExistente.setNombre(request.getNombre());
         usuarioRepository.save(usuarioExistente);
         return new UsuarioResponse(
@@ -77,7 +88,7 @@ public class UsuarioService {
 
     public void eliminar(Long id){
         //Verificar que existe
-        usuarioRepository.findById(id).orElseThrow(()-> new UsuarioNotFoundException("Tipo de Pago no encontrada"));
-        usuarioRepository.deleteById(id);
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+id+" no encontrada"));
+        usuarioRepository.delete(usuario);
     }
 }

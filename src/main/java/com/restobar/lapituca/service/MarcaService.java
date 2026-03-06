@@ -1,7 +1,10 @@
 package com.restobar.lapituca.service;
 
+import com.restobar.lapituca.dto.MarcaRequest;
+import com.restobar.lapituca.dto.MarcaResponse;
 import com.restobar.lapituca.entity.Marca;
-import com.restobar.lapituca.exception.MarcaNotFoundException;
+import com.restobar.lapituca.exception.ApiException;
+import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.MarcaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,29 +17,76 @@ public class MarcaService {
 
     private final MarcaRepository marcaRepository;
 
-    public Marca guardar(Marca marca){
-        return marcaRepository.save(marca);
+    public MarcaResponse guardar(MarcaRequest request){
+
+        if (marcaRepository.existsByNombre(request.getNombre())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe una Marca con ese nombre");
+        }
+
+        Marca marca = new Marca();
+        marca.setNombre(request.getNombre());
+
+        marcaRepository.save(marca);
+
+        return new MarcaResponse(
+                marca.getId(),
+                marca.getNombre(),
+                marca.getFechaHora_registro(),
+                marca.getFechaHora_actualizacion()
+        );
     }
 
-    public List<Marca> listarTodos(){
-        return marcaRepository.findAll();
+    public List<MarcaResponse> listarTodos(){
+
+        return marcaRepository.findAll().stream().map(
+                marca -> new MarcaResponse(
+                        marca.getId(),
+                        marca.getNombre(),
+                        marca.getFechaHora_registro(),
+                        marca.getFechaHora_actualizacion()
+                )
+        ).toList();
     }
 
-    public Marca obtenerPorId(Long id) {
-        return marcaRepository.findById(id).orElseThrow(()
-                -> new MarcaNotFoundException("Marca no encontrada"));
+    public MarcaResponse obtenerPorId(Long id){
+
+        Marca marca = marcaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Marca con id: " + id + " no encontrada"));
+
+        return new MarcaResponse(
+                marca.getId(),
+                marca.getNombre(),
+                marca.getFechaHora_registro(),
+                marca.getFechaHora_actualizacion()
+        );
     }
 
-    public Marca actualizar(Long id, Marca marca) {
-        Marca marcaExistente = marcaRepository.findById(id).orElseThrow(()
-                -> new MarcaNotFoundException("Marca no encontrada"));
+    public MarcaResponse actualizar(Long id, MarcaRequest request){
 
-        marcaExistente.setNombre(marca.getNombre());
+        Marca marcaExistente = marcaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Marca con id: " + id + " no encontrada"));
 
-        return  marcaRepository.save(marcaExistente);
+        if (marcaRepository.existsByNombreAndIdNot(request.getNombre(), id)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe una Marca con ese nombre");
+        }
+
+        marcaExistente.setNombre(request.getNombre());
+
+        Marca marcaActualizada = marcaRepository.save(marcaExistente);
+
+        return new MarcaResponse(
+                marcaActualizada.getId(),
+                marcaActualizada.getNombre(),
+                marcaActualizada.getFechaHora_registro(),
+                marcaActualizada.getFechaHora_actualizacion()
+        );
     }
 
-    public void eliminar(Long id) {
-        marcaRepository.deleteById(id);
+    public void eliminar(Long id){
+
+        Marca marca = marcaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Marca con id: " + id + " no encontrada"));
+
+        marcaRepository.delete(marca);
     }
 }

@@ -25,7 +25,6 @@ public class Pedido {
     private Long id;
 
     //length no sirve para controlar numeros solo texto, precision y scale si
-    @Positive
     @Digits(integer = 3, fraction = 0)
     @Column(nullable = false, precision = 3)
     private Integer cantidad;
@@ -37,7 +36,6 @@ public class Pedido {
     @Column(nullable = false, precision = 7, scale = 2)
     private BigDecimal subtotal;
 
-    @Size(min = 5, max = 25)
     @Column(nullable = false, length = 25)
     private String estado;
 

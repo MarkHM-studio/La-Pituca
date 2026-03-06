@@ -52,7 +52,7 @@ public class ComprobanteService {
 
         //Buscar comprobante
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id:" + request.getComprobanteId() + "no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
 
         //Validar que tenga pedidos
         List<Pedido> pedidos = comprobante.getPedidos();
@@ -91,7 +91,7 @@ public class ComprobanteService {
 
         // Validar mesas
         if (request.getMesasId() == null || request.getMesasId().isEmpty()) {
-            throw new RuntimeException("Debe enviar al menos una mesa");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Debe enviar al menos una mesa");
         }
 
         Set<Long> mesasUnicas = new HashSet<>(request.getMesasId());
@@ -100,10 +100,10 @@ public class ComprobanteService {
         for (Long mesaId : mesasUnicas) {
 
             Mesa mesa = mesaRepository.findById(mesaId)
-                    .orElseThrow(() -> new MesaNotFoundException("Mesa no encontrada con id: " + mesaId));
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Mesa con id: "+mesaId+" no encontrada"));
 
             if ("OCUPADO".equalsIgnoreCase(mesa.getEstado())) {
-                throw new RuntimeException("La mesa " + mesa.getNombre() + " ya está ocupada");
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"La mesa " + mesa.getNombre() + " ya está ocupada");
             }
 
             // Marcar mesa ocupada
@@ -158,13 +158,13 @@ public class ComprobanteService {
     public String registrarVenta(RegistrarVentaRequest request) {
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow(() -> new UsuarioNotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario con id: "+request.getUsuarioId()+" no encontrado"));
 
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                .orElseThrow(() -> new ComprobanteNotFoundException("Comprobante no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
 
-        if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
-            throw new RuntimeException("El comprobante ya está cerrado");
+        if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El Comprobante ya fue pagado");
         }
 
         BigDecimal totalPagar = comprobante.getTotal();
@@ -173,7 +173,70 @@ public class ComprobanteService {
         List<BigDecimal> montos = request.getMontos();
 
         if (tiposPago.size() != montos.size()) {
-            throw new RuntimeException("La cantidad de tipos de pago y montos no coincide");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La cantidad de tipos de pago y montos no coincide");
+        }
+
+        List<Long> tiposPagoList = new ArrayList<>(tiposPago);
+
+        BigDecimal sumaPagos = montos.stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        boolean tieneEfectivo = tiposPagoList.contains(1L);
+        boolean tieneBilletera = tiposPagoList.contains(2L);
+
+        // Validación billetera (debe coincidir exactamente)
+        if (tieneBilletera && !tieneEfectivo) {
+
+            if (sumaPagos.compareTo(totalPagar) != 0) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El monto de billetera debe coincidir con el total: " + totalPagar);}
+        }
+
+        // Validación general
+        if (sumaPagos.compareTo(totalPagar) < 0) {
+
+            BigDecimal falta = totalPagar.subtract(sumaPagos);
+
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Falta pagar: " + falta);
+        }
+
+        BigDecimal vuelto = sumaPagos.subtract(totalPagar);
+
+        registrarMovimientos(
+                tiposPagoList,
+                montos,
+                comprobante,
+                request.getTipoBilleteraVirtualId()
+        );
+
+        cerrarComprobante(comprobante, usuario);
+
+        if (vuelto.compareTo(BigDecimal.ZERO) > 0) {
+            return "Pago realizado correctamente. Vuelto: " + vuelto;
+        }
+
+        return "Pago realizado correctamente";
+    }
+    /*
+    @Transactional
+    public String registrarVenta(RegistrarVentaRequest request) {
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+request.getUsuarioId()+" no encontrado"));
+
+        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
+
+        if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El comprobante ya fue pagado");
+        }
+
+        BigDecimal totalPagar = comprobante.getTotal();
+
+        Set<Long> tiposPago = request.getTipoPagoId();
+        List<BigDecimal> montos = request.getMontos();
+
+        if (tiposPago.size() != montos.size()) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,"La cantidad de tipos de pago y montos no coincide");
         }
 
         List<Long> tiposPagoList = new ArrayList<>(tiposPago);
@@ -190,7 +253,7 @@ public class ComprobanteService {
 
             if (montoRecibido.compareTo(totalPagar) < 0) {
                 BigDecimal falta = totalPagar.subtract(montoRecibido);
-                throw new RuntimeException("Falta pagar: " + falta);
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,"Falta pagar: " + falta);
             }
 
             BigDecimal vuelto = montoRecibido.subtract(totalPagar);
@@ -208,7 +271,7 @@ public class ComprobanteService {
             BigDecimal montoRecibido = montos.get(0);
 
             if (montoRecibido.compareTo(totalPagar) != 0) {
-                throw new RuntimeException("El monto debe coincidir exactamente con el total: " + totalPagar);
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,"El monto debe coincidir exactamente con el total: " + totalPagar);
             }
 
             registrarMovimientos(tiposPagoList, montos, comprobante, request.getTipoBilleteraVirtualId());
@@ -223,7 +286,7 @@ public class ComprobanteService {
 
             if (sumaPagos.compareTo(totalPagar) < 0) {
                 BigDecimal falta = totalPagar.subtract(sumaPagos);
-                throw new RuntimeException("Falta pagar: " + falta);
+                throw new ApiException(ErrorCode.VALIDATION_ERROR,"Falta pagar: " + falta);
             }
 
             BigDecimal vuelto = sumaPagos.subtract(totalPagar);
@@ -235,28 +298,26 @@ public class ComprobanteService {
             return "Pago realizado correctamente. Vuelto: " + vuelto;
         }
 
-        throw new RuntimeException("Tipo de pago no válido");
-    }
-
-    private void registrarMovimientos(List<Long> tiposPago,
-                                      List<BigDecimal> montos,
-                                      Comprobante comprobante,
-                                      Long tipoBilleteraVirtualId) {
+        throw new ApiException(ErrorCode.VALIDATION_ERROR,"Tipo de pago no válido");
+    }*/
+    private void registrarMovimientos(List<Long> tiposPago, List<BigDecimal> montos, Comprobante comprobante, Long tipoBilleteraVirtualId) {
 
         for (int i = 0; i < tiposPago.size(); i++) {
 
+            Long tipoPagoId = tiposPago.get(i);
+
             TipoPago tipoPago = tipoPagoRepository.findById(tiposPago.get(i))
-                    .orElseThrow(() -> new RuntimeException("TipoPago no encontrado"));
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoPago con id: "+tipoPagoId+" no encontrado"));
 
             MovimientoTipoPago movimiento = new MovimientoTipoPago();
             movimiento.setComprobante(comprobante);
             movimiento.setTipoPago(tipoPago);
             movimiento.setMonto(montos.get(i));
 
-            if (tiposPago.get(i) == 2L) {
+            if (tipoPagoId.equals(2L)) {
                 TipoBilleteraVirtual billetera = tipoBilleteraVirtualRepository
                         .findById(tipoBilleteraVirtualId)
-                        .orElseThrow(() -> new RuntimeException("TipoBilleteraVirtual no encontrado"));
+                        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoBilleteraVirtual con id: "+tipoBilleteraVirtualId+ " no encontrado"));
                 movimiento.setTipoBilleteraVirtual(billetera);
             }
 

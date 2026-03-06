@@ -4,8 +4,10 @@ import com.restobar.lapituca.dto.TipoBilleteraVirtualRequest;
 import com.restobar.lapituca.dto.TipoBilleteraVirtualResponse;
 import com.restobar.lapituca.service.TipoBilleteraVirtualService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -14,6 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("api/billeteraVirtual")
 @RequiredArgsConstructor
+@Validated
 public class TipoBilleteraVirtualController {
 
     private final TipoBilleteraVirtualService tipoBilleteraVirtualService;
@@ -34,19 +37,19 @@ public class TipoBilleteraVirtualController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TipoBilleteraVirtualResponse> obtenerPorId(@PathVariable Long id){
+    public ResponseEntity<TipoBilleteraVirtualResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         TipoBilleteraVirtualResponse tipoBilleteraVirtualResponse = tipoBilleteraVirtualService.obtenerPorId(id);
         return ResponseEntity.ok(tipoBilleteraVirtualResponse);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TipoBilleteraVirtualResponse> actualizar(@PathVariable Long id, @Valid @RequestBody TipoBilleteraVirtualRequest request){
+    public ResponseEntity<TipoBilleteraVirtualResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody TipoBilleteraVirtualRequest request){
         TipoBilleteraVirtualResponse tipoBilleteraVirtualResponse = tipoBilleteraVirtualService.actualizar(id, request);
         return ResponseEntity.ok(tipoBilleteraVirtualResponse);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminar(@PathVariable Long id){
+    public ResponseEntity<Void> eliminar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         tipoBilleteraVirtualService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
