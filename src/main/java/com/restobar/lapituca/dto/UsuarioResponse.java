@@ -11,9 +11,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UsuarioResponse {
     private Long usuarioId;
-    private String nombre;
+    private String username;
     private String password;
-    private String correo;
+    private String tipo_usuario;
     private String estado;
     private LocalDateTime fechaHora_registro;
     private LocalDateTime fechaHora_actualizacion;

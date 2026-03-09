@@ -38,7 +38,7 @@ public class Trabajador {
     @Column(nullable = false, length = 9, unique = true)
     private Integer telefono;
 
-    @Email
+    @Email(message = "El correo debe ser válido")
     @Column(nullable = false, unique = true)
     private String correo;
 
@@ -56,4 +56,20 @@ public class Trabajador {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
+
+    //Relaciones
+    //Trabajador-Usuario
+    @OneToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
+
+    //Trabajador-TipoJornada
+    @ManyToOne
+    @JoinColumn(name = "id_tipoJornada")
+    private TipoJornada tipoJornada;
+
+    //Trabajador-Turno
+    @ManyToOne
+    @JoinColumn(name = "id_turno")
+    private Turno turno;
 }

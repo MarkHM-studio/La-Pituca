@@ -24,7 +24,7 @@ public class Sucursal {
     @Column(nullable = false, length = 150)
     private String direccion;
 
-    @Size(min = 13, max = 13)
+    @Size(min = 11, max = 11)
     @Column(nullable = false, length = 11, unique = true)
     private String RUC;
 }

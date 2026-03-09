@@ -1,7 +1,6 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,20 +10,17 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Mesa")
+@Table(name = "Rol")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Mesa {
+public class Rol {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 50)
     private String nombre;
-
-    @Column(nullable = false, length = 25)
-    private String estado;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)

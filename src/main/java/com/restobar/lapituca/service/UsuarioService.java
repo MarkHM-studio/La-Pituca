@@ -19,23 +19,22 @@ public class UsuarioService {
 
     public UsuarioResponse guardar(UsuarioRequest request){
 
-        if (usuarioRepository.existsByNombre(request.getNombre())){
+        if (usuarioRepository.existsByUsername(request.getUsername())){
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Usuario con este nombre");
         }
 
         Usuario usuario = new Usuario();
-        usuario.setNombre(request.getNombre());
+        usuario.setUsername(request.getUsername());
         usuario.setPassword(request.getPassword());
-        usuario.setCorreo(request.getCorreo());
         usuario.setEstado("ACTIVO");
         usuarioRepository.save(usuario);
 
         return new UsuarioResponse(
                 usuario.getId(),
-                usuario.getNombre(),
+                usuario.getUsername(),
                 usuario.getPassword(),
-                usuario.getCorreo(),
                 usuario.getEstado(),
+                usuario.getTipo_usuario(),
                 usuario.getFechaHora_registro(),
                 usuario.getFechaHora_actualizacion()
         );
@@ -44,9 +43,9 @@ public class UsuarioService {
     public List<UsuarioResponse> listarTodos(){
         return usuarioRepository.findAll().stream().map(usuario -> new UsuarioResponse(
                 usuario.getId(),
-                usuario.getNombre(),
+                usuario.getUsername(),
                 usuario.getPassword(),
-                usuario.getCorreo(),
+                usuario.getTipo_usuario(),
                 usuario.getEstado(),
                 usuario.getFechaHora_registro(),
                 usuario.getFechaHora_actualizacion()
@@ -57,9 +56,9 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+id+" no encontrada"));
         return new UsuarioResponse(
                 usuario.getId(),
-                usuario.getNombre(),
+                usuario.getUsername(),
                 usuario.getPassword(),
-                usuario.getCorreo(),
+                usuario.getTipo_usuario(),
                 usuario.getEstado(),
                 usuario.getFechaHora_registro(),
                 usuario.getFechaHora_actualizacion()
@@ -69,17 +68,17 @@ public class UsuarioService {
     public UsuarioResponse actualizar(Long id, UsuarioRequest request){
         Usuario usuarioExistente = usuarioRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+id+" no encontrada"));
 
-        if (usuarioRepository.existsByNombreAndIdNot(request.getNombre(), id)){
+        if (usuarioRepository.existsByUsernameAndIdNot(request.getUsername(), id)){
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Usuario con este nombre");
         }
 
-        usuarioExistente.setNombre(request.getNombre());
+        usuarioExistente.setUsername(request.getUsername());
         usuarioRepository.save(usuarioExistente);
         return new UsuarioResponse(
                 usuarioExistente.getId(),
-                usuarioExistente.getNombre(),
+                usuarioExistente.getUsername(),
                 usuarioExistente.getPassword(),
-                usuarioExistente.getCorreo(),
+                usuarioExistente.getTipo_usuario(),
                 usuarioExistente.getEstado(),
                 usuarioExistente.getFechaHora_registro(),
                 usuarioExistente.getFechaHora_actualizacion()

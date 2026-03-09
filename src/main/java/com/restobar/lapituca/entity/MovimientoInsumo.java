@@ -1,30 +1,32 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Mesa")
+@Table(name = "MovimientoInsumo")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Mesa {
+public class MovimientoInsumo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String nombre;
-
-    @Column(nullable = false, length = 25)
-    private String estado;
+    @Positive
+    @Digits(integer = 4, fraction = 2)
+    @Column(nullable = false, precision = 6, scale = 2)
+    private BigDecimal cantidad;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)
@@ -33,4 +35,15 @@ public class Mesa {
     @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
+
+    //Relaciones
+    //MovimientoInsumo-Insumo
+    @ManyToOne
+    @JoinColumn(name = "id_insumo")
+    private Insumo insumo;
+
+    //MovimientoInsumo-Comprobante
+    @ManyToOne
+    @JoinColumn(name = "id_comprobante")
+    private Comprobante comprobante;
 }

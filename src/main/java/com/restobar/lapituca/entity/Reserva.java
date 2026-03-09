@@ -2,6 +2,8 @@ package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,36 +11,35 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
-@Table(name = "Usuario")
+@Table(name = "Reserva")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuario {
+public class Reserva {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5,max = 50)
-    @Column(nullable = false, length = 50)
-    private String username;
+    @Column(nullable = false)
+    private LocalDate fecha_reserva;
 
-    @Size(min = 5,max = 25)
+    @Column(nullable = false)
+    private LocalTime hora_reserva;
+
+    @Positive
+    @Min(1)
     @Column(nullable = false, length = 25)
-    private String password;
-    /*
-    @Email(message = "El correo debe ser válido")
-    @Column(nullable = false, unique = true)
-    private String correo;*/
+    private Integer num_personas;
 
     @Size(min = 5, max = 25)
     @Column(nullable = false, length = 25)
     private String estado;
-
-    @Column(nullable = false)
-    private Integer tipo_usuario;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)
@@ -48,8 +49,19 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
 
-    //Usuario-Rol
+    //Relaciones
+    //Reserva-Usuario
     @ManyToOne
-    @JoinColumn(name = "id_rol")
-    private Rol rol;
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
+
+    //Reserva-Grupo
+    @ManyToOne
+    @JoinColumn(name = "id_Grupo")
+    private Grupo grupo;
+
+    //Reserva-Transaccion
+    @OneToOne
+    @JoinColumn(name = "id_transaccion")
+    private Transaccion transaccion;
 }
