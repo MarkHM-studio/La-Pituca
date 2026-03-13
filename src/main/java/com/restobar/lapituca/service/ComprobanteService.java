@@ -1,6 +1,11 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.*;
+import com.restobar.lapituca.dto.request.AsignarMesasRequest;
+import com.restobar.lapituca.dto.request.ComprobanteRequest;
+import com.restobar.lapituca.dto.request.RegistrarVentaRequest;
+import com.restobar.lapituca.dto.response.ComprobanteResponse;
+import com.restobar.lapituca.dto.response.DetalleMesaResponse;
+import com.restobar.lapituca.dto.response.GrupoResponse;
 import com.restobar.lapituca.entity.*;
 import com.restobar.lapituca.exception.*;
 import com.restobar.lapituca.repository.*;
@@ -25,15 +30,19 @@ public class ComprobanteService {
     private final TipoBilleteraVirtualRepository tipoBilleteraVirtualRepository;
     private final PedidoRepository pedidoRepository;
     private final MovimientoTipoPagoRepository movimientoTipoPagoRepository;
+    private final SucursalRepository sucursalRepository;
 
 
     @Transactional
-    public ComprobanteResponse crearComprobante() {
+    public ComprobanteResponse crearComprobante(ComprobanteRequest request) {
+
+        Sucursal sucursal = sucursalRepository.findById(request.getSucursalId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Sucursal con id: "+request.getSucursalId()+" no encontrado"));
 
         Comprobante comprobante = new Comprobante();
         comprobante.setTotal(BigDecimal.ZERO);
         comprobante.setIGV(BigDecimal.ZERO);
         comprobante.setEstado("ABIERTO");
+        comprobante.setSucursal(sucursal);
 
         comprobanteRepository.save(comprobante);
 

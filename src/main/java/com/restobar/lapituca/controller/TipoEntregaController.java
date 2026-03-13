@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.TipoEntregaRequest;
-import com.restobar.lapituca.dto.TipoEntregaResponse;
+import com.restobar.lapituca.dto.request.TipoEntregaRequest;
+import com.restobar.lapituca.dto.response.TipoEntregaResponse;
 import com.restobar.lapituca.service.TipoEntregaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -33,20 +33,17 @@ public class TipoEntregaController {
 
     @GetMapping
     public ResponseEntity<List<TipoEntregaResponse>> listarTodos(){
-        List<TipoEntregaResponse> tiposEntregasResponse= tipoEntregaService.listarTodos();
-        return ResponseEntity.ok(tiposEntregasResponse);
+        return ResponseEntity.ok(tipoEntregaService.listarTodos());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TipoEntregaResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        TipoEntregaResponse tipoEntregaResponse = tipoEntregaService.obtenerPorId(id);
-        return ResponseEntity.ok(tipoEntregaResponse);
+        return ResponseEntity.ok(tipoEntregaService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TipoEntregaResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody TipoEntregaRequest request){
-        TipoEntregaResponse tipoEntregaResponseActualizado = tipoEntregaService.actualizar(id, request);
-        return ResponseEntity.ok(tipoEntregaResponseActualizado);
+        return ResponseEntity.ok(tipoEntregaService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

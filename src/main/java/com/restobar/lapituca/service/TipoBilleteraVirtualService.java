@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.TipoBilleteraVirtualRequest;
-import com.restobar.lapituca.dto.TipoBilleteraVirtualResponse;
+import com.restobar.lapituca.dto.request.TipoBilleteraVirtualRequest;
+import com.restobar.lapituca.dto.response.TipoBilleteraVirtualResponse;
 import com.restobar.lapituca.entity.TipoBilleteraVirtual;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;

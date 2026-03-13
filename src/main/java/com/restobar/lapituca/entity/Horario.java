@@ -21,10 +21,10 @@ public class Horario {
     private Long id;
 
     @Column(nullable = false, length = 50)
-    private LocalTime hora_inicio;
+    private LocalTime horaInicio;
 
     @Column(nullable = false, length = 50)
-    private LocalTime hora_fin;
+    private LocalTime horaFin;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)

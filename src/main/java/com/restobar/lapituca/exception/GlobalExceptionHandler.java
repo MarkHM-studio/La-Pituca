@@ -15,6 +15,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @Slf4j //Para usar Logs
 public class GlobalExceptionHandler {
 
+    private static final boolean DEV_MODE = true;
+
+    //Validar datos enviados que recibe mi Dto Request, Detecta @Valid: @NotNull, @NotBlank, @Size, @Email, @Min, @Max
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> manejarValidaciones(
             MethodArgumentNotValidException ex,
@@ -39,22 +42,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> manejarTypeMismatch(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request) {
-
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                "El parámetro debe ser del tipo correcto",
-                request.getRequestURI()
-        );
-
-        return ResponseEntity.badRequest().body(error);
-    }
-
-    //Validar datos enviados que recibe mi Dto Request, Detecta @Valid: @NotNull, @NotBlank, @Size, @Email, @Min, @Max
+    //Validación de parámetros @PathVariable, @RequestParam (hay 2)
+    //api/horario/-1  | @Pathvariable negativo
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> manejarConstraintViolation(
             ConstraintViolationException ex,
@@ -78,7 +67,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(error);
     }
 
-    //Valida la restricciones de la base de datos (UNIQUE, FK, NOT NULL)
+    //api/horario/abc    | @Pathvariable texto
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> manejarTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "El parámetro debe ser del tipo correcto",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    //Valida la restricciones de la base de datos (UNIQUE, FK, NOT NULL)   | Errores en la BD
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(
             DataIntegrityViolationException ex,
@@ -87,8 +92,11 @@ public class GlobalExceptionHandler {
         // Mensaje para el cliente
         String userMessage = "Violación de integridad de datos";
 
-        // Log interno con todo el detalle
-        log.error("Error de integridad: ", ex);
+        if(DEV_MODE){
+            log.error("Error de integridad: ", ex); // → Desarrollo
+        } else{
+            log.error("Error de integridad: {}", ex.getMessage()); // → Produccion
+        }
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
@@ -100,6 +108,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    //400 / 404 / 409           | Errores de negocio
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApiException(
             ApiException ex,
@@ -119,11 +128,17 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
-    /*
+    //Error general | Cualquier error no capturado anteriormente
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> manejarErrorGeneral(
             Exception ex,
             HttpServletRequest request) {
+
+        if(DEV_MODE){
+            log.error("Error inesperado: ", ex); // → Desarrollo | ver stack trace completo para hacer debugging (proceso para identficar, analizar y eliminar error en el código fuente de un sw)
+        } else{
+            log.error("Error inesperado: {}", ex.getMessage()); // → Produccion
+        }
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -133,6 +148,6 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }*/
+    }
 }
 

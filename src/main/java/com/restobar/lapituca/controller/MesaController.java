@@ -1,8 +1,8 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.MesaRequest;
-import com.restobar.lapituca.dto.MesaResponse;
-import com.restobar.lapituca.dto.MesasOcupadasResponse;
+import com.restobar.lapituca.dto.request.MesaRequest;
+import com.restobar.lapituca.dto.response.MesaResponse;
+import com.restobar.lapituca.dto.response.MesasOcupadasResponse;
 import com.restobar.lapituca.service.MesaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -33,20 +33,17 @@ public class MesaController {
 
     @GetMapping
     public ResponseEntity<List<MesaResponse>> listarTodos(){
-        List<MesaResponse> mesaResponse = mesaService.listarTodos();
-        return ResponseEntity.ok(mesaResponse);
+        return ResponseEntity.ok(mesaService.listarTodos());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<MesaResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        MesaResponse mesaResponse = mesaService.obtenerPorId(id);
-        return ResponseEntity.ok(mesaResponse);
+        return ResponseEntity.ok(mesaService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<MesaResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id , @Valid @RequestBody MesaRequest request){
-        MesaResponse mesaResponse = mesaService.actualizar(id, request);
-        return ResponseEntity.ok(mesaResponse);
+        return ResponseEntity.ok(mesaService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

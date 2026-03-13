@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.ProductoRequest;
-import com.restobar.lapituca.dto.ProductoResponse;
+import com.restobar.lapituca.dto.request.ProductoRequest;
+import com.restobar.lapituca.dto.response.ProductoResponse;
 import com.restobar.lapituca.service.ProductoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -42,8 +42,7 @@ public class ProductoController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody ProductoRequest request){
-        ProductoResponse productoActualizado = productoService.actualizar(id, request);
-        return ResponseEntity.ok(productoActualizado);
+        return ResponseEntity.ok(productoService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

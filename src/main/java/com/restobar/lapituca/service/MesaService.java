@@ -1,8 +1,8 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.MesaRequest;
-import com.restobar.lapituca.dto.MesaResponse;
-import com.restobar.lapituca.dto.MesasOcupadasResponse;
+import com.restobar.lapituca.dto.request.MesaRequest;
+import com.restobar.lapituca.dto.response.MesaResponse;
+import com.restobar.lapituca.dto.response.MesasOcupadasResponse;
 import com.restobar.lapituca.entity.Comprobante;
 import com.restobar.lapituca.entity.DetalleMesa;
 import com.restobar.lapituca.entity.Grupo;

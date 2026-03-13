@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.TipoPagoRequest;
-import com.restobar.lapituca.dto.TipoPagoResponse;
+import com.restobar.lapituca.dto.request.TipoPagoRequest;
+import com.restobar.lapituca.dto.response.TipoPagoResponse;
 import com.restobar.lapituca.entity.TipoPago;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;

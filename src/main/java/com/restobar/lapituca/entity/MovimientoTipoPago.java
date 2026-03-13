@@ -1,7 +1,6 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;

@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.UsuarioRequest;
-import com.restobar.lapituca.dto.UsuarioResponse;
+import com.restobar.lapituca.dto.request.UsuarioRequest;
+import com.restobar.lapituca.dto.response.UsuarioResponse;
 import com.restobar.lapituca.service.UsuarioService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -25,27 +25,24 @@ public class UsuarioController {
     public ResponseEntity<UsuarioResponse> crear(@Valid @RequestBody UsuarioRequest request){
         UsuarioResponse usuarioResponse = usuarioService.guardar(request);
 
-        URI location = URI.create("api/usuario/" + usuarioResponse.getUsuarioId());
+        URI location = URI.create("api/usuario/" + usuarioResponse.getId());
 
         return ResponseEntity.created(location).body(usuarioResponse);
     }
 
     @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listarTodos(){
-        List<UsuarioResponse> usuariosResponse = usuarioService.listarTodos();
-        return ResponseEntity.ok(usuariosResponse);
+        return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        UsuarioResponse usuarioResponse = usuarioService.obtenerPorId(id);
-        return ResponseEntity.ok(usuarioResponse);
+        return ResponseEntity.ok(usuarioService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody UsuarioRequest request){
-        UsuarioResponse usuarioResponseActualizado = usuarioService.actualizar(id, request);
-        return ResponseEntity.ok(usuarioResponseActualizado);
+        return ResponseEntity.ok(usuarioService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

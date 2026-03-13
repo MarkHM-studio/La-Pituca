@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.CategoriaRequest;
-import com.restobar.lapituca.dto.CategoriaResponse;
+import com.restobar.lapituca.dto.request.CategoriaRequest;
+import com.restobar.lapituca.dto.response.CategoriaResponse;
 import com.restobar.lapituca.entity.Categoria;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;
@@ -9,7 +9,6 @@ import com.restobar.lapituca.repository.CategoriaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service

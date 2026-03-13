@@ -1,10 +1,13 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "Sucursal")
@@ -16,15 +19,20 @@ public class Sucursal {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5, max = 50)
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @Size(min = 5, max = 150)
     @Column(nullable = false, length = 150)
     private String direccion;
 
-    @Size(min = 11, max = 11)
     @Column(nullable = false, length = 11, unique = true)
     private String RUC;
+
+    @CreationTimestamp()
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime fechaHora_registro;
+
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime fechaHora_actualizacion;
 }

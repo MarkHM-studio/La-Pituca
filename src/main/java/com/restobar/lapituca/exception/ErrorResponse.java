@@ -9,6 +9,7 @@ import java.util.List;
 public class ErrorResponse {
 
     private LocalDateTime timestamp;
+    /*private String errorId;*/
     private int status;
     private String error;
     private String message;

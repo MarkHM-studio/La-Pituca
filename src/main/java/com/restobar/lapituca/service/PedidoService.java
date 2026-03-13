@@ -1,6 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.*;
+import com.restobar.lapituca.dto.request.PedidoRequest;
+import com.restobar.lapituca.dto.response.*;
 import com.restobar.lapituca.entity.*;
 import com.restobar.lapituca.exception.*;
 import com.restobar.lapituca.repository.*;
@@ -20,6 +21,7 @@ public class PedidoService {
     private final ComprobanteRepository comprobanteRepository;
     private final TipoEntregaRepository tipoEntregaRepository;
     private final DetalleMesaRepository detalleMesaRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Transactional
     public PedidoDetalleResponse guardar(PedidoRequest request) {
@@ -30,6 +32,13 @@ public class PedidoService {
 
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
+
+        if (request.getUsuarioId() == null) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Debe crear un usuario antes de agregar pedidos");
+        }
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+request.getUsuarioId()+" no encontrado"));
 
         if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se pueden agregar pedidos a un comprobante cerrado");
@@ -64,6 +73,7 @@ public class PedidoService {
         pedido.setSubtotal(subtotal);
         pedido.setEstado("PENDIENTE");
         pedido.setTipoEntrega(tipoEntrega);
+        pedido.setUsuario(usuario);
 
         Pedido pedidoGuardado = pedidoRepository.save(pedido);
 
@@ -152,6 +162,17 @@ public class PedidoService {
                         pedido.getTipoEntrega().getNombre(),
                         pedido.getFechaHora_registro(),
                         pedido.getFechaHora_actualizacion()
+                ),
+                new UsuarioResponse(
+                        pedido.getUsuario().getId(),
+                        pedido.getUsuario().getUsername(),
+                        pedido.getUsuario().getTipo_usuario(),
+                        pedido.getUsuario().getEstado(),
+                        pedido.getUsuario().getFechaHora_registro(),
+                        pedido.getUsuario().getFechaHora_actualizacion(),
+
+                        pedido.getUsuario().getRol().getId(),
+                        pedido.getUsuario().getRol().getNombre()
                 )
         );
     }
@@ -169,7 +190,8 @@ public class PedidoService {
                         p.getFechaHora_registro(),
                         p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getTipoEntrega().getId()
+                        p.getTipoEntrega().getId(),
+                        p.getUsuario().getId()
                 ))
                 .toList();
     }
@@ -188,7 +210,8 @@ public class PedidoService {
                         p.getFechaHora_registro(),
                         p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getTipoEntrega().getId()
+                        p.getTipoEntrega().getId(),
+                        p.getUsuario().getId()
                 );
     }
 
@@ -221,7 +244,8 @@ public class PedidoService {
                         p.getFechaHora_registro(),
                         p.getComprobante().getId(),
                         p.getProducto().getId(),
-                        p.getTipoEntrega().getId()
+                        p.getTipoEntrega().getId(),
+                        p.getUsuario().getId()
                 ))
                 .toList();
     }
@@ -295,6 +319,17 @@ public class PedidoService {
                                 p.getTipoEntrega().getNombre(),
                                 p.getTipoEntrega().getFechaHora_registro(),
                                 p.getTipoEntrega().getFechaHora_actualizacion()
+                        ),
+                        new UsuarioResponse(
+                                p.getUsuario().getId(),
+                                p.getUsuario().getUsername(),
+                                p.getUsuario().getTipo_usuario(),
+                                p.getUsuario().getEstado(),
+                                p.getUsuario().getFechaHora_registro(),
+                                p.getUsuario().getFechaHora_actualizacion(),
+
+                                p.getUsuario().getRol().getId(),
+                                p.getUsuario().getRol().getNombre()
                         )
                 ))
                 .toList();

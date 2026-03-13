@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.TipoEntregaRequest;
-import com.restobar.lapituca.dto.TipoEntregaResponse;
+import com.restobar.lapituca.dto.request.TipoEntregaRequest;
+import com.restobar.lapituca.dto.response.TipoEntregaResponse;
 import com.restobar.lapituca.entity.TipoEntrega;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;

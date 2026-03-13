@@ -1,8 +1,9 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.AsignarMesasRequest;
-import com.restobar.lapituca.dto.ComprobanteResponse;
-import com.restobar.lapituca.dto.RegistrarVentaRequest;
+import com.restobar.lapituca.dto.request.AsignarMesasRequest;
+import com.restobar.lapituca.dto.request.ComprobanteRequest;
+import com.restobar.lapituca.dto.response.ComprobanteResponse;
+import com.restobar.lapituca.dto.request.RegistrarVentaRequest;
 import com.restobar.lapituca.service.ComprobanteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,18 +22,17 @@ public class ComprobanteController {
     private final ComprobanteService comprobanteService;
 
     @PostMapping
-    public ResponseEntity<ComprobanteResponse> crear() {
-        ComprobanteResponse comprobanteResponse = comprobanteService.crearComprobante();
+    public ResponseEntity<ComprobanteResponse> crear(@Valid @RequestBody ComprobanteRequest request) {
+        ComprobanteResponse nuevocomprobanteResponse = comprobanteService.crearComprobante(request);
 
-        URI location = URI.create("/api/comprobante/" + comprobanteResponse.getId());
+        URI location = URI.create("/api/comprobante/" + nuevocomprobanteResponse.getId());
 
-        return ResponseEntity.created(location).body(comprobanteResponse);
+        return ResponseEntity.created(location).body(nuevocomprobanteResponse);
     }
 
     @PutMapping("/asignar-mesas")
     public ResponseEntity<ComprobanteResponse> asignarMesas(@Valid @RequestBody AsignarMesasRequest request){
-        ComprobanteResponse comprobanteResponse = comprobanteService.asignarGrupoYMesasSiEsComer(request);
-        return ResponseEntity.ok(comprobanteResponse);
+        return ResponseEntity.ok(comprobanteService.asignarGrupoYMesasSiEsComer(request));
     }
 
     @DeleteMapping("/{id}")

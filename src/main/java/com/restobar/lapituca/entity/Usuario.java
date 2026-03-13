@@ -33,12 +33,12 @@ public class Usuario {
     @Column(nullable = false, unique = true)
     private String correo;*/
 
+    @Column(nullable = true)
+    private Integer tipo_usuario;
+
     @Size(min = 5, max = 25)
     @Column(nullable = false, length = 25)
     private String estado;
-
-    @Column(nullable = false)
-    private Integer tipo_usuario;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)

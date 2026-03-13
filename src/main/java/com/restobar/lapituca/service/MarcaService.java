@@ -1,7 +1,7 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.MarcaRequest;
-import com.restobar.lapituca.dto.MarcaResponse;
+import com.restobar.lapituca.dto.request.MarcaRequest;
+import com.restobar.lapituca.dto.response.MarcaResponse;
 import com.restobar.lapituca.entity.Marca;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;

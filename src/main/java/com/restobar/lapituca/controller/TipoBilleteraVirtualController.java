@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.TipoBilleteraVirtualRequest;
-import com.restobar.lapituca.dto.TipoBilleteraVirtualResponse;
+import com.restobar.lapituca.dto.request.TipoBilleteraVirtualRequest;
+import com.restobar.lapituca.dto.response.TipoBilleteraVirtualResponse;
 import com.restobar.lapituca.service.TipoBilleteraVirtualService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -32,20 +32,17 @@ public class TipoBilleteraVirtualController {
 
     @GetMapping
     public ResponseEntity<List<TipoBilleteraVirtualResponse>> listarTodos(){
-        List<TipoBilleteraVirtualResponse> tiposBilleterasVirtualResponse = tipoBilleteraVirtualService.listarTodos();
-        return ResponseEntity.ok(tiposBilleterasVirtualResponse);
+        return ResponseEntity.ok(tipoBilleteraVirtualService.listarTodos());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TipoBilleteraVirtualResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        TipoBilleteraVirtualResponse tipoBilleteraVirtualResponse = tipoBilleteraVirtualService.obtenerPorId(id);
-        return ResponseEntity.ok(tipoBilleteraVirtualResponse);
+        return ResponseEntity.ok(tipoBilleteraVirtualService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TipoBilleteraVirtualResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody TipoBilleteraVirtualRequest request){
-        TipoBilleteraVirtualResponse tipoBilleteraVirtualResponse = tipoBilleteraVirtualService.actualizar(id, request);
-        return ResponseEntity.ok(tipoBilleteraVirtualResponse);
+        return ResponseEntity.ok(tipoBilleteraVirtualService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

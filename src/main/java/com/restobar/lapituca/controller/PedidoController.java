@@ -1,8 +1,8 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.PedidoDetalleResponse;
-import com.restobar.lapituca.dto.PedidoRequest;
-import com.restobar.lapituca.dto.PedidoResponse;
+import com.restobar.lapituca.dto.response.PedidoDetalleResponse;
+import com.restobar.lapituca.dto.request.PedidoRequest;
+import com.restobar.lapituca.dto.response.PedidoResponse;
 import com.restobar.lapituca.service.PedidoService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -38,14 +38,12 @@ public class PedidoController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PedidoResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        PedidoResponse response = pedidoService.obtenerPorId(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(pedidoService.obtenerPorId(id));
     }
 
     @GetMapping("/{id}/detalle")
     public ResponseEntity<PedidoDetalleResponse> obtenerDetallePorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
-        PedidoDetalleResponse detalleResponse = pedidoService.obtenerDetallePorId(id);
-        return ResponseEntity.ok(detalleResponse);
+        return ResponseEntity.ok(pedidoService.obtenerDetallePorId(id));
     }
 
     @GetMapping("/comprobante/{comprobanteId}") //la variable dinámica definida acá, tienes que referenciarla abajo ↓
@@ -55,14 +53,12 @@ public class PedidoController {
 
     @GetMapping("/comprobante/{comprobanteId}/detalle")
     public ResponseEntity<List<PedidoDetalleResponse>> obtenerDetallePorComprobanteId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long comprobanteId){
-
         return ResponseEntity.ok(pedidoService.obtenerDetallePorComprobanteId(comprobanteId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<PedidoDetalleResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @RequestBody PedidoRequest request){
-        PedidoDetalleResponse detalleResponseActualizado = pedidoService.actualizar(id, request);
-        return ResponseEntity.ok(detalleResponseActualizado);
+        return ResponseEntity.ok(pedidoService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")

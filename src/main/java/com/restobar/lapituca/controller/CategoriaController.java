@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.CategoriaRequest;
-import com.restobar.lapituca.dto.CategoriaResponse;
+import com.restobar.lapituca.dto.request.CategoriaRequest;
+import com.restobar.lapituca.dto.response.CategoriaResponse;
 import com.restobar.lapituca.service.CategoriaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;

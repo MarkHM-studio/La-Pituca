@@ -10,8 +10,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
 
 @Entity
 @Table(name = "Pedido")
@@ -63,4 +61,9 @@ public class Pedido {
     @ManyToOne
     @JoinColumn(name = "id_tipoEntrega", nullable = false)
     private TipoEntrega tipoEntrega;
+
+    //Pedido-Usuario
+    @ManyToOne
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private Usuario usuario;
 }

@@ -1,9 +1,9 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.CategoriaResponse;
-import com.restobar.lapituca.dto.MarcaResponse;
-import com.restobar.lapituca.dto.ProductoRequest;
-import com.restobar.lapituca.dto.ProductoResponse;
+import com.restobar.lapituca.dto.response.CategoriaResponse;
+import com.restobar.lapituca.dto.response.MarcaResponse;
+import com.restobar.lapituca.dto.request.ProductoRequest;
+import com.restobar.lapituca.dto.response.ProductoResponse;
 import com.restobar.lapituca.entity.Categoria;
 import com.restobar.lapituca.entity.Marca;
 import com.restobar.lapituca.entity.Producto;

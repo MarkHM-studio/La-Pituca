@@ -1,7 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.MarcaRequest;
-import com.restobar.lapituca.dto.MarcaResponse;
+import com.restobar.lapituca.dto.request.MarcaRequest;
+import com.restobar.lapituca.dto.response.MarcaResponse;
 import com.restobar.lapituca.service.MarcaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
