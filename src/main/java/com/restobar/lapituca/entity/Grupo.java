@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "Grupo")
@@ -25,6 +26,16 @@ public class Grupo {
     @Column(nullable = true, length = 50)
     private String nombre;
 
+    @Column(nullable = false, length = 25)
+    private String estado; // ACTIVO, CONSUMIENDO, CERRADO
+
+    @Column(nullable = false)
+    private Integer tipoGrupo; //1 = creado en local //2 = creado desde reserva
+
+    private LocalDateTime fechaHora_InicioConsumo;
+
+    private LocalDateTime fechaHora_Liberacion;
+
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
@@ -35,7 +46,6 @@ public class Grupo {
 
     //Relaciones
     //Grupo - DetalleMesa
-    /*
-    @OneToMany
-    private List<DetalleMesa> detalleMesa;*/
+    @OneToMany(mappedBy = "grupo")
+    private List<DetalleMesa> detalleMesas;
 }

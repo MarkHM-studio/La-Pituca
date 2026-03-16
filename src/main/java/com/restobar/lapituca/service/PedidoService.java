@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,6 +23,7 @@ public class PedidoService {
     private final TipoEntregaRepository tipoEntregaRepository;
     private final DetalleMesaRepository detalleMesaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final GrupoRepository grupoRepository;
 
     @Transactional
     public PedidoDetalleResponse guardar(PedidoRequest request) {
@@ -40,8 +42,15 @@ public class PedidoService {
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+request.getUsuarioId()+" no encontrado"));
 
-        if ("CERRADO".equalsIgnoreCase(comprobante.getEstado())) {
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se pueden agregar pedidos a un comprobante cerrado");
+        if (!"MOZO".equalsIgnoreCase(usuario.getRol().getNombre())) {
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "Solo los usuarios con rol MOZO pueden registrar pedidos"
+            );
+        }
+
+        if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"No se pueden agregar pedidos a un comprobante pagado");
         }
 
         Producto producto = productoRepository.findById(request.getProductoId())
@@ -98,8 +107,11 @@ public class PedidoService {
         // IGV 18% (Perú)
         BigDecimal igv = total.multiply(new BigDecimal("0.18"));
 
-        comprobante.setTotal(total);
+        BigDecimal total_general= total.add(igv);
+
+        comprobante.setSubtotal(total);
         comprobante.setIGV(igv);
+        comprobante.setTotal(total_general);
 
         comprobanteRepository.save(comprobante);
     }
@@ -435,4 +447,38 @@ public class PedidoService {
         pedido.setEstado("PREPARANDO");
         pedidoRepository.save(pedido);
     }
+
+    @Transactional
+    public void marcarComoEntregado(Long id){
+
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
+                        "Pedido no encontrado"));
+
+        pedido.setEstado("ENTREGADO");
+
+        pedidoRepository.save(pedido);
+
+        Comprobante comprobante = pedido.getComprobante();
+
+        Grupo grupo = comprobante.getGrupo();
+
+        if(grupo != null){
+
+            if(grupo.getFechaHora_InicioConsumo() == null){
+
+                LocalDateTime inicio = LocalDateTime.now();
+
+                grupo.setFechaHora_InicioConsumo(inicio);
+
+                grupo.setFechaHora_Liberacion(inicio.plusMinutes(45));
+
+                grupo.setEstado("CONSUMIENDO");
+
+                grupoRepository.save(grupo);
+            }
+        }
+    }
 }
+
+

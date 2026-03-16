@@ -89,13 +89,16 @@ public class ComprobanteService {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Este comprobante ya tiene un grupo asignado");
         }
 
-        //Crear grupo
         Grupo grupo = new Grupo();
         grupo.setNombre(
                 request.getNombreGrupo() == null || request.getNombreGrupo().isBlank()
                         ? "NA"
                         : request.getNombreGrupo()
         );
+
+        grupo.setEstado("ACTIVO");
+        grupo.setTipoGrupo(1);
+
         grupoRepository.save(grupo);
 
         // Validar mesas
@@ -169,6 +172,13 @@ public class ComprobanteService {
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario con id: "+request.getUsuarioId()+" no encontrado"));
 
+        if (!"CAJERO".equalsIgnoreCase(usuario.getRol().getNombre())) {
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "Solo los usuarios con rol CAJERO pueden registrar ventas"
+            );
+        }
+
         Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
 
@@ -225,6 +235,70 @@ public class ComprobanteService {
 
         return "Pago realizado correctamente";
     }
+
+    private void registrarMovimientos(List<Long> tiposPago, List<BigDecimal> montos, Comprobante comprobante, Long tipoBilleteraVirtualId) {
+
+        for (int i = 0; i < tiposPago.size(); i++) {
+
+            Long tipoPagoId = tiposPago.get(i);
+
+            TipoPago tipoPago = tipoPagoRepository.findById(tiposPago.get(i))
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoPago con id: "+tipoPagoId+" no encontrado"));
+
+            MovimientoTipoPago movimiento = new MovimientoTipoPago();
+            movimiento.setComprobante(comprobante);
+            movimiento.setTipoPago(tipoPago);
+            movimiento.setMonto(montos.get(i));
+
+            if (tipoPagoId.equals(2L)) {
+                TipoBilleteraVirtual billetera = tipoBilleteraVirtualRepository
+                        .findById(tipoBilleteraVirtualId)
+                        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoBilleteraVirtual con id: "+tipoBilleteraVirtualId+ " no encontrado"));
+                movimiento.setTipoBilleteraVirtual(billetera);
+            }
+
+            movimientoTipoPagoRepository.save(movimiento);
+        }
+    }
+
+    private void cerrarComprobante(Comprobante comprobante, Usuario usuario) {
+
+        comprobante.setEstado("PAGADO");
+        comprobante.setFechaHora_venta(LocalDateTime.now());
+        comprobante.setUsuario(usuario);
+
+        comprobanteRepository.save(comprobante);
+
+        // Actualizar pedidos
+        comprobante.getPedidos().forEach(p -> {
+            p.setEstado("PAGADO");
+            pedidoRepository.save(p);
+        });
+
+        // Liberar mesas
+        if (comprobante.getGrupo() != null) {
+
+            List<DetalleMesa> detalles =
+                    detalleMesaRepository.findByGrupo_Id(comprobante.getGrupo().getId());
+
+            for (DetalleMesa d : detalles) {
+                Mesa mesa = d.getMesa();
+                mesa.setEstado("DESOCUPADO");
+                mesaRepository.save(mesa);
+            }
+        }
+
+        if (comprobante.getGrupo() != null) {
+
+            Grupo grupo = comprobante.getGrupo();
+
+            grupo.setEstado("CERRADO");
+
+            grupoRepository.save(grupo);
+
+        }
+    }
+
     /*
     @Transactional
     public String registrarVenta(RegistrarVentaRequest request) {
@@ -309,56 +383,4 @@ public class ComprobanteService {
 
         throw new ApiException(ErrorCode.VALIDATION_ERROR,"Tipo de pago no válido");
     }*/
-    private void registrarMovimientos(List<Long> tiposPago, List<BigDecimal> montos, Comprobante comprobante, Long tipoBilleteraVirtualId) {
-
-        for (int i = 0; i < tiposPago.size(); i++) {
-
-            Long tipoPagoId = tiposPago.get(i);
-
-            TipoPago tipoPago = tipoPagoRepository.findById(tiposPago.get(i))
-                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoPago con id: "+tipoPagoId+" no encontrado"));
-
-            MovimientoTipoPago movimiento = new MovimientoTipoPago();
-            movimiento.setComprobante(comprobante);
-            movimiento.setTipoPago(tipoPago);
-            movimiento.setMonto(montos.get(i));
-
-            if (tipoPagoId.equals(2L)) {
-                TipoBilleteraVirtual billetera = tipoBilleteraVirtualRepository
-                        .findById(tipoBilleteraVirtualId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"TipoBilleteraVirtual con id: "+tipoBilleteraVirtualId+ " no encontrado"));
-                movimiento.setTipoBilleteraVirtual(billetera);
-            }
-
-            movimientoTipoPagoRepository.save(movimiento);
-        }
-    }
-
-    private void cerrarComprobante(Comprobante comprobante, Usuario usuario) {
-
-        comprobante.setEstado("PAGADO");
-        comprobante.setFechaHora_venta(LocalDateTime.now());
-        comprobante.setUsuario(usuario);
-
-        comprobanteRepository.save(comprobante);
-
-        // Actualizar pedidos
-        comprobante.getPedidos().forEach(p -> {
-            p.setEstado("PAGADO");
-            pedidoRepository.save(p);
-        });
-
-        // Liberar mesas
-        if (comprobante.getGrupo() != null) {
-
-            List<DetalleMesa> detalles =
-                    detalleMesaRepository.findByGrupo_Id(comprobante.getGrupo().getId());
-
-            for (DetalleMesa d : detalles) {
-                Mesa mesa = d.getMesa();
-                mesa.setEstado("DESOCUPADO");
-                mesaRepository.save(mesa);
-            }
-        }
-    }
 }

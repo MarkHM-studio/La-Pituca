@@ -26,7 +26,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponse> crear(@Valid @RequestBody ClienteRequest request) {
         ClienteResponse clienteResponse = clienteService.guardar(request);
 
-        URI location = URI.create("/api/cliente" + clienteResponse.getId());
+        URI location = URI.create("/api/cliente/" + clienteResponse.getId());
 
         return ResponseEntity.created(location).body(clienteResponse);
     }
@@ -35,7 +35,7 @@ public class ClienteController {
     public ResponseEntity<ClienteResponse> registrar(@Valid @RequestBody UsuarioClienteRequest request) {
         ClienteResponse clienteResponse = clienteService.registrar(request);
 
-        URI location = URI.create("/api/cliente" + clienteResponse.getId());
+        URI location = URI.create("/registrar/" + clienteResponse.getId());
 
         return ResponseEntity.created(location).body(clienteResponse);
     }

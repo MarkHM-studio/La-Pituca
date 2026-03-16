@@ -40,6 +40,8 @@ public class Reserva {
     @Column(nullable = false, length = 25)
     private String estado;
 
+    private LocalDateTime fechaHora_expiracionPago;
+
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
@@ -55,7 +57,7 @@ public class Reserva {
     private Usuario usuario;
 
     //Reserva-Grupo
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "id_Grupo")
     private Grupo grupo;
 

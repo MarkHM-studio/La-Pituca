@@ -78,4 +78,10 @@ public class PedidoController {
         pedidoService.marcarComoPreparando(id);
         return ResponseEntity.ok("Pedido marcado como 'PREPARANDO' correctamente");
     }
+
+    @PutMapping("/{id}/entregado")
+    public ResponseEntity<String> marcarComoEntregado(@PathVariable Long id) {
+        pedidoService.marcarComoEntregado(id);
+        return ResponseEntity.ok("Pedido marcado como 'ENTREGADO' correctamente");
+    }
 }

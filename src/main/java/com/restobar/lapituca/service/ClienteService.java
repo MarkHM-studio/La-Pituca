@@ -4,10 +4,12 @@ import com.restobar.lapituca.dto.request.ClienteRequest;
 import com.restobar.lapituca.dto.request.UsuarioClienteRequest;
 import com.restobar.lapituca.dto.response.ClienteResponse;
 import com.restobar.lapituca.entity.Cliente;
+import com.restobar.lapituca.entity.Rol;
 import com.restobar.lapituca.entity.Usuario;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;
 import com.restobar.lapituca.repository.ClienteRepository;
+import com.restobar.lapituca.repository.RolRepository;
 import com.restobar.lapituca.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
+    private final RolRepository rolRepository;
 
     public ClienteResponse guardar(ClienteRequest request) {
 
@@ -73,11 +76,14 @@ public class ClienteService {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Ya existe un Cliente con ese correo");
         }
 
+        Rol rol = rolRepository.findById(request.getRolId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Rol con id: "+request.getRolId()+" no encontrado"));
+
         Usuario usuario = new Usuario();
         usuario.setUsername(request.getUsername());
         usuario.setPassword(request.getPassword());
         usuario.setEstado("ACTIVO");
         usuario.setTipo_usuario(1);
+        usuario.setRol(rol);
         usuarioRepository.save(usuario);
 
         Cliente cliente= new Cliente();
@@ -88,6 +94,7 @@ public class ClienteService {
         cliente.setCorreo(request.getCorreo());
         cliente.setEstado("ACTIVO");
         cliente.setTipo_cliente("NUEVO");/*NUEVO, AMATEUR, FRECUENTE, VIP*/
+        cliente.setUsuario(usuario);
 
         Cliente clienteGuardado = clienteRepository.save(cliente);
 
@@ -156,7 +163,7 @@ public class ClienteService {
         }
 
         if (clienteRepository.existsByCorreoAndIdNot(request.getDni(), id)){
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Ya existe un Cliente con ese DNI");
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,"Ya existe un Cliente con ese correo");
         }
 
         clienteExistente.setNombre(request.getNombre());

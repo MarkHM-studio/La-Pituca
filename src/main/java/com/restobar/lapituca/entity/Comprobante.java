@@ -27,6 +27,9 @@ public class Comprobante {
     @Column(nullable = false, precision = 7, scale = 2)
     private BigDecimal IGV;
 
+    @Column(nullable = false, precision = 8, scale = 2)
+    private BigDecimal subtotal;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_apertura;
