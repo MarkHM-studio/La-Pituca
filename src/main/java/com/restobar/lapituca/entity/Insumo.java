@@ -26,13 +26,9 @@ public class Insumo {
     @Column(nullable = false, length = 50)
     private String nombre;
 
-    @Column(nullable = false)
     @Digits(integer = 5, fraction = 2)
-    private BigDecimal precio;
-
-    @Min(0)
     @Column(nullable = false)
-    private Integer stock;
+    private BigDecimal stock;
 
     @Size(min = 1, max = 25)
     @Column(nullable = false, length = 25)

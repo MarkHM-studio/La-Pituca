@@ -2,6 +2,7 @@ package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,12 +23,16 @@ public class Entrada {
     private Long id;
 
     @Column(nullable = false)
-    @Digits(integer = 5, fraction = 2)
-    private BigDecimal costo_unitario;
+    @Digits(integer = 4, fraction = 2)
+    private BigDecimal cantidad_total;
+
+    @Size(min = 1, max = 25)
+    @Column(nullable = false)
+    private String unidad_medida;
 
     @Column(nullable = false)
     @Digits(integer = 5, fraction = 2)
-    private BigDecimal cantidad_adquirida;
+    private BigDecimal costo_unitario;
 
     @Column(nullable = false)
     @Digits(integer = 5, fraction = 2)
@@ -56,4 +61,9 @@ public class Entrada {
     @ManyToOne
     @JoinColumn(name = "id_proveedor")
     private Proveedor proveedor;
+
+    //Entrada-Usuario
+    @ManyToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
 }

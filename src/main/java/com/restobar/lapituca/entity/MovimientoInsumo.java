@@ -3,6 +3,7 @@ package com.restobar.lapituca.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,6 +27,10 @@ public class MovimientoInsumo {
     @Digits(integer = 4, fraction = 2)
     @Column(nullable = false, precision = 6, scale = 2)
     private BigDecimal cantidad;
+
+    @Size(min = 1, max = 25)
+    @Column(nullable = false)
+    private String unidad_medida;
 
     @CreationTimestamp()
     @Column(nullable = false, updatable = false)

@@ -1,13 +1,16 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
@@ -22,7 +25,12 @@ public class Receta {
 
     @Positive
     @Column(nullable = false)
-    private Integer cantidad;
+    @Digits(integer = 4, fraction = 2)
+    private BigDecimal cantidad;
+
+    @Size(min = 1, max = 25)
+    @Column(nullable = false)
+    private String unidad_medida;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
