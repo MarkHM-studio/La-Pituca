@@ -17,12 +17,11 @@ public class ProductoRequest {
     @Digits(integer = 5, fraction = 2, message = "El precio no puede tener más de 5 dígitos enteros y 2 decimales")
     private BigDecimal precio;
 
-    @NotNull(message = "El stock es obligatorio")
     @Min(value = 0, message = "El stock no puede ser negativo")
     private Integer stock;
 
     @NotNull(message = "La categoría es obligatoria")
     private Long categoriaId;
-    @NotNull(message = "La marca es obligatoria")
+
     private Long marcaId;
 }

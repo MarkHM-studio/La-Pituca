@@ -30,6 +30,8 @@ public class ComprobanteService {
     private final TipoBilleteraVirtualRepository tipoBilleteraVirtualRepository;
     private final PedidoRepository pedidoRepository;
     private final MovimientoTipoPagoRepository movimientoTipoPagoRepository;
+    private final MovimientoInsumoRepository movimientoInsumoRepository;
+    private final RecetaRepository recetaRepository;
     private final SucursalRepository sucursalRepository;
 
 
@@ -227,6 +229,7 @@ public class ComprobanteService {
                 request.getTipoBilleteraVirtualId()
         );
 
+        registrarMovimientoInsumos(comprobante);
         cerrarComprobante(comprobante, usuario);
 
         if (vuelto.compareTo(BigDecimal.ZERO) > 0) {
@@ -298,6 +301,66 @@ public class ComprobanteService {
 
         }
     }
+
+    private void registrarMovimientoInsumos(Comprobante comprobante) {
+
+        Map<Long, BigDecimal> acumuladoPorInsumo = new HashMap<>();
+        Map<Long, Insumo> insumoMap = new HashMap<>();
+
+        List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobante.getId());
+
+        for (Pedido pedido : pedidos) {
+            Producto producto = pedido.getProducto();
+            if (producto.getCategoria() == null || (producto.getCategoria().getId() != 1L && producto.getCategoria().getId() != 2L)) {
+                continue;
+            }
+
+            List<Receta> recetas = recetaRepository.findByProducto_IdOrderByIdAsc(producto.getId());
+
+            for (Receta receta : recetas) {
+                Insumo insumo = receta.getInsumo();
+                BigDecimal cantidad = convertir(receta.getCantidad().multiply(BigDecimal.valueOf(pedido.getCantidad())), receta.getUnidad_medida(), insumo.getUnidad_medida());
+                acumuladoPorInsumo.merge(insumo.getId(), cantidad, BigDecimal::add);
+                insumoMap.put(insumo.getId(), insumo);
+            }
+        }
+
+        for (Map.Entry<Long, BigDecimal> item : acumuladoPorInsumo.entrySet()) {
+            Insumo insumo = insumoMap.get(item.getKey());
+            if (insumo == null) continue;
+
+            MovimientoInsumo mov = new MovimientoInsumo();
+            mov.setComprobante(comprobante);
+            mov.setInsumo(insumo);
+            mov.setCantidad(item.getValue());
+            mov.setUnidad_medida(insumo.getUnidad_medida());
+            movimientoInsumoRepository.save(mov);
+        }
+    }
+
+    private BigDecimal convertir(BigDecimal cantidad, String source, String target) {
+        String from = source.trim().toUpperCase();
+        String to = target.trim().toUpperCase();
+        if (from.equals(to)) return cantidad;
+        if ((from.equals("G") || from.equals("GRAMOS")) && (to.equals("KG") || to.equals("KILOGRAMOS"))) {
+            return cantidad.divide(new BigDecimal("1000"), 6, java.math.RoundingMode.HALF_UP);
+        }
+        if ((from.equals("KG") || from.equals("KILOGRAMOS")) && (to.equals("G") || to.equals("GRAMOS"))) {
+            return cantidad.multiply(new BigDecimal("1000"));
+        }
+        if (from.equals("ML") && (to.equals("L") || to.equals("LITROS"))) {
+            return cantidad.divide(new BigDecimal("1000"), 6, java.math.RoundingMode.HALF_UP);
+        }
+        if ((from.equals("L") || from.equals("LITROS")) && to.equals("ML")) {
+            return cantidad.multiply(new BigDecimal("1000"));
+        }
+        if ((from.equals("UD") || from.equals("UDS") || from.equals("UNIDAD") || from.equals("UNIDADES"))
+                && (to.equals("UD") || to.equals("UDS") || to.equals("UNIDAD") || to.equals("UNIDADES"))) {
+            return cantidad;
+        }
+        throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Unidad incompatible para movimiento de insumo: " + source + " -> " + target);
+    }
+
 
     /*
     @Transactional
