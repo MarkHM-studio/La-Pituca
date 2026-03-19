@@ -36,7 +36,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
         //19:30 - 20:30 reserva dos
     //inicio 2 < fin 1*/
     @Query("""
-        SELECT r
+        SELECT DISTINCT r
         FROM Reserva r
         JOIN r.grupo g
         JOIN g.detalleMesas dm
@@ -44,11 +44,11 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
         AND r.estado <> 'CANCELADO'
         AND dm.mesa.id IN :mesasId
         AND r.hora_reserva < :fin
-        AND FUNCTION('ADDTIME', r.hora_reserva, '01:00:00') > :inicio
+        AND r.hora_reserva > :inicioMenosUnaHora
     """)
     List<Reserva> findReservasSolapadas(
             @Param("fecha") LocalDate fecha,
-            @Param("inicio") LocalTime inicio,
+            @Param("inicioMenosUnaHora") LocalTime inicioMenosUnaHora,
             @Param("fin") LocalTime fin,
             @Param("mesasId") Set<Long> mesasId
     );

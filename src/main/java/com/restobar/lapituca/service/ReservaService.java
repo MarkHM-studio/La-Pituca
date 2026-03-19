@@ -161,11 +161,12 @@ public class ReservaService {
 
         LocalTime inicio = hora;
         LocalTime fin = hora.plusHours(1);
+        LocalTime inicioMenosUnaHora = inicio.minusHours(1);
 
         List<Reserva> reservasSolapadas =
                 reservaRepository.findReservasSolapadas(
                         fecha,
-                        inicio,
+                        inicioMenosUnaHora,
                         fin,
                         mesasId
                 );

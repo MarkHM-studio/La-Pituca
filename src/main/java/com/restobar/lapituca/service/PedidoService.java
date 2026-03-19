@@ -36,7 +36,6 @@ public class PedidoService {
         if (!"MOZO".equalsIgnoreCase(usuario.getRol().getNombre())) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Solo los usuarios con rol MOZO pueden registrar pedidos");
         }
-
         if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se pueden agregar pedidos a un comprobante pagado");
         }
@@ -67,7 +66,6 @@ public class PedidoService {
 
     private void recalcularTotalesComprobante(Long comprobanteId) {
         Comprobante comprobante = findComprobante(comprobanteId);
-        //Buscar todos los pedidos pertenecientes a un comprobante
         List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
 
         BigDecimal subtotal = pedidos.stream().map(Pedido::getSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -81,9 +79,7 @@ public class PedidoService {
     }
 
     private PedidoDetalleResponse mapToPedidoDetalleResponse(Pedido pedido) {
-
         Grupo grupo = pedido.getComprobante().getGrupo();
-
         GrupoResponse grupoResponse = null;
 
         if (grupo != null) {
@@ -143,7 +139,6 @@ public class PedidoService {
                         pedido.getUsuario().getEstado(),
                         pedido.getUsuario().getFechaHora_registro(),
                         pedido.getUsuario().getFechaHora_actualizacion(),
-
                         pedido.getUsuario().getRol().getId(),
                         pedido.getUsuario().getRol().getNombre()
                 )
@@ -167,11 +162,8 @@ public class PedidoService {
     }
 
     public List<PedidoResponse> obtenerPorComprobanteId(Long comprobanteId) {
-
         findComprobante(comprobanteId);
-
         List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
-
         if (pedidos.isEmpty()) throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No hay pedidos para este comprobante");
         return pedidos.stream().map(p -> new PedidoResponse(p.getId(), p.getCantidad(), p.getPrecio_unitario(), p.getSubtotal(), p.getEstado(), p.getFechaHora_registro(), p.getComprobante().getId(), p.getProducto().getId(), p.getTipoEntrega().getId(), p.getUsuario().getId())).toList();
     }
@@ -179,7 +171,6 @@ public class PedidoService {
     public List<PedidoDetalleResponse> obtenerDetallePorComprobanteId(Long comprobanteId) {
         findComprobante(comprobanteId);
         List<Pedido> pedidos = pedidoRepository.findByComprobante_Id(comprobanteId);
-
         if (pedidos.isEmpty()) throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No hay pedidos para este comprobante");
         return pedidos.stream().map(this::mapToPedidoDetalleResponse).toList();
     }
@@ -214,26 +205,21 @@ public class PedidoService {
         devolverStockProductoEInsumos(pedido.getProducto(), pedido.getCantidad());
         Long comprobanteId = pedido.getComprobante().getId();
         pedidoRepository.delete(pedido);
-        // Recalcular totales
         recalcularTotalesComprobante(comprobanteId);
     }
 
     @Transactional
     public void marcarComoListo(Long pedidoId) {
-
         Pedido pedido = pedidoRepository.findById(pedidoId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Pedido con id: " + pedidoId + " no encontrado"));
         if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede modificar un pedido PAGADO");
-
         pedido.setEstado("LISTO");
         pedidoRepository.save(pedido);
     }
 
     @Transactional
     public void marcarComoPreparando(Long pedidoId) {
-
         Pedido pedido = pedidoRepository.findById(pedidoId).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Pedido con id: " + pedidoId + " no encontrado"));
         if ("PAGADO".equalsIgnoreCase(pedido.getEstado())) throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede modificar un pedido PAGADO");
-
         pedido.setEstado("PREPARANDO");
         pedidoRepository.save(pedido);
     }
@@ -259,9 +245,11 @@ public class PedidoService {
         if (producto.getStock() < cantidadPedido) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Stock insuficiente del producto");
         }
+
         if (isCategoriaPreparada(producto)) {
             List<Receta> recetas = recetaRepository.findByProducto_IdOrderByIdAsc(producto.getId());
             if (recetas.isEmpty()) throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El producto preparado no tiene receta configurada");
+
             for (Receta receta : recetas) {
                 Insumo insumo = receta.getInsumo();
                 BigDecimal desc = convert(receta.getCantidad().multiply(BigDecimal.valueOf(cantidadPedido)), receta.getUnidad_medida(), insumo.getUnidad_medida());
@@ -269,22 +257,15 @@ public class PedidoService {
                     throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Stock insuficiente del insumo: " + insumo.getNombre());
                 }
             }
+
             for (Receta receta : recetas) {
                 Insumo insumo = receta.getInsumo();
                 BigDecimal desc = convert(receta.getCantidad().multiply(BigDecimal.valueOf(cantidadPedido)), receta.getUnidad_medida(), insumo.getUnidad_medida());
-
-                /*
-                // 🔥 Validación de rango antes de actualizar
-                BigDecimal nuevoStock = insumo.getStock().subtract(desc);
-                if (nuevoStock.compareTo(new BigDecimal("9999999.99")) > 0 || nuevoStock.compareTo(BigDecimal.ZERO) < 0) {
-                    throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,
-                            "Stock fuera de rango para el insumo " + insumo.getNombre());
-                }*/
-
                 insumo.setStock(insumo.getStock().subtract(desc));
                 insumoRepository.save(insumo);
             }
         }
+
         producto.setStock(producto.getStock() - cantidadPedido);
         productoRepository.save(producto);
     }
@@ -343,5 +324,3 @@ public class PedidoService {
         return tipoEntregaRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Tipo de entrega con id: " + id + " no encontrado"));
     }
 }
-
-

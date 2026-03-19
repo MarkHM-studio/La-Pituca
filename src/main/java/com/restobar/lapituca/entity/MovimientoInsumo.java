@@ -24,8 +24,8 @@ public class MovimientoInsumo {
     private Long id;
 
     @Positive
-    @Digits(integer = 4, fraction = 2)
-    @Column(nullable = false, precision = 6, scale = 2)
+    @Digits(integer = 10, fraction = 6)
+    @Column(nullable = false, precision = 16, scale = 6)
     private BigDecimal cantidad;
 
     @Size(min = 1, max = 25)
