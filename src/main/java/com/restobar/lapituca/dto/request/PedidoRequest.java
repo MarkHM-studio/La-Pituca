@@ -2,11 +2,15 @@ package com.restobar.lapituca.dto.request;
 
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import jakarta.validation.constraints.*;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PedidoRequest {
 
     @NotNull(message = "La cantidad es obligatoria")

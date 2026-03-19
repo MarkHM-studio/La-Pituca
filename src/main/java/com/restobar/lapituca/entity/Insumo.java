@@ -30,7 +30,7 @@ public class Insumo {
     @Column(nullable = false)
     private BigDecimal precio;//SE AGREGÓ
 
-    @Digits(integer = 5, fraction = 2)
+    @Digits(integer = 10, fraction = 2)
     @Column(nullable = false)
     private BigDecimal stock;
 

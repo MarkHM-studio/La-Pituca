@@ -27,7 +27,7 @@ public class Comprobante {
     @Column(nullable = false, precision = 7, scale = 2)
     private BigDecimal IGV;
 
-    @Column(nullable = false, precision = 8, scale = 2)
+    @Column(nullable = true, precision = 8, scale = 2)
     private BigDecimal subtotal;
 
     @CreationTimestamp

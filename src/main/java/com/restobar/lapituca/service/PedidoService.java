@@ -272,6 +272,15 @@ public class PedidoService {
             for (Receta receta : recetas) {
                 Insumo insumo = receta.getInsumo();
                 BigDecimal desc = convert(receta.getCantidad().multiply(BigDecimal.valueOf(cantidadPedido)), receta.getUnidad_medida(), insumo.getUnidad_medida());
+
+                /*
+                // 🔥 Validación de rango antes de actualizar
+                BigDecimal nuevoStock = insumo.getStock().subtract(desc);
+                if (nuevoStock.compareTo(new BigDecimal("9999999.99")) > 0 || nuevoStock.compareTo(BigDecimal.ZERO) < 0) {
+                    throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,
+                            "Stock fuera de rango para el insumo " + insumo.getNombre());
+                }*/
+
                 insumo.setStock(insumo.getStock().subtract(desc));
                 insumoRepository.save(insumo);
             }
