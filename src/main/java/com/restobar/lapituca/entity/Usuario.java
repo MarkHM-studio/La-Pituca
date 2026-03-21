@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+
 @Entity
 @Table(name = "Usuario")
 @Data
@@ -21,15 +22,17 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Size(min = 5,max = 50)
+    @Size(min = 5, max = 50)
     @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Size(min = 5,max = 25)
-    @Column(nullable = true, length = 25)
+    @Column(nullable = true, length = 100)
     private String password;
 
-    @Size(min = 5,max = 25)
+    @Column(nullable = true, length = 500)
+    private String foto;
+
+    @Size(min = 5, max = 25)
     @Column(nullable = false, length = 25)
     private String provider; // LOCAL o GOOGLE
 
@@ -40,7 +43,10 @@ public class Usuario {
     @Column(nullable = false, length = 25)
     private String estado;
 
-    @CreationTimestamp()
+    @Column(name = "ultimo_login")
+    private LocalDateTime ultimoLogin;
+
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
 
@@ -48,8 +54,9 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
 
+    //Relaciones
     //Usuario-Rol
     @ManyToOne
-    @JoinColumn(name = "id_rol")
+    @JoinColumn(name = "id_rol", nullable = false)
     private Rol rol;
 }

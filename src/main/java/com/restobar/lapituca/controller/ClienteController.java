@@ -31,15 +31,6 @@ public class ClienteController {
         return ResponseEntity.created(location).body(clienteResponse);
     }
 
-    @PostMapping("/registrar")
-    public ResponseEntity<ClienteResponse> registrar(@Valid @RequestBody UsuarioClienteRequest request) {
-        ClienteResponse clienteResponse = clienteService.registrar(request);
-
-        URI location = URI.create("/registrar/" + clienteResponse.getId());
-
-        return ResponseEntity.created(location).body(clienteResponse);
-    }
-
     @GetMapping
     public ResponseEntity<List<ClienteResponse>> listarTodos() {
         return ResponseEntity.ok(clienteService.listarTodos());
@@ -53,7 +44,8 @@ public class ClienteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ClienteResponse> actualizar(
-            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, UsuarioClienteRequest request) {
+            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id,
+            @Valid @RequestBody ClienteRequest request) {
         return ResponseEntity.ok(clienteService.actualizar(id, request));
     }
 

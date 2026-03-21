@@ -9,6 +9,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "Cliente")
 @Data
@@ -25,13 +28,13 @@ public class Cliente {
     @Column(nullable = false, length = 50)
     private String apellido;
 
-    @Column(nullable = false, length = 8, unique = true)
-    private String dni;
+    @Column(name = "fecha_nacimiento")
+    private LocalDate fechaNacimiento;
 
-    @Column(nullable = false, length = 9, unique = true)
+    @Column(nullable = true, length = 9, unique = true)
     private String telefono;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     private String correo;
 
     @Column(nullable = false, length = 25)
@@ -40,7 +43,7 @@ public class Cliente {
     @Column(nullable = false, length = 25)
     private String tipo_cliente;
 
-    @CreationTimestamp()
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
 
@@ -51,6 +54,12 @@ public class Cliente {
     //Relaciones
     //Cliente-Usuario
     @OneToOne
-    @JoinColumn(name = "id_usuario")
+    @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;
+
+    //Relaciones
+    //Cliente-Distrito
+    @ManyToOne
+    @JoinColumn(name = "id_distrito")
+    private Distrito distrito;
 }
