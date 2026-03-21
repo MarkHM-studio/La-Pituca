@@ -22,18 +22,18 @@ public class Usuario {
     private Long id;
 
     @Size(min = 5,max = 50)
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
 
     @Size(min = 5,max = 25)
-    @Column(nullable = false, length = 25)
+    @Column(nullable = true, length = 25)
     private String password;
-    /*
-    @Email(message = "El correo debe ser válido")
-    @Column(nullable = false, unique = true)
-    private String correo;*/
 
-    @Column(nullable = true)
+    @Size(min = 5,max = 25)
+    @Column(nullable = false, length = 25)
+    private String provider; // LOCAL o GOOGLE
+
+    @Column(nullable = false)
     private Integer tipo_usuario;
 
     @Size(min = 5, max = 25)
