@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,7 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/usuario")
+@RequestMapping("/api/usuario")
 @RequiredArgsConstructor
 @Validated
 public class UsuarioController {
@@ -22,10 +23,11 @@ public class UsuarioController {
     private final UsuarioService usuarioService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioResponse> crear(@Valid @RequestBody UsuarioRequest request){
         UsuarioResponse usuarioResponse = usuarioService.guardar(request);
 
-        URI location = URI.create("api/usuario/" + usuarioResponse.getId());
+        URI location = URI.create("/api/usuario/" + usuarioResponse.getId());
 
         return ResponseEntity.created(location).body(usuarioResponse);
     }

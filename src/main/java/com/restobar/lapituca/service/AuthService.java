@@ -68,7 +68,7 @@ public class AuthService {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese teléfono");
         }
 
-        Rol rolCliente = rolRepository.findByNombreIgnoreCase("CLIENTE")
+        Rol rolCliente = rolRepository.findByNombreIgnoreCase("ADMINISTRADOR")
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "No existe el rol CLIENTE"));
 
         Distrito distrito = distritoRepository.findByNombreIgnoreCase(request.getDistrito())
@@ -80,6 +80,7 @@ public class AuthService {
         usuario.setRol(rolCliente);
         usuario.setProvider("LOCAL");
         usuario.setTipo_usuario(1);
+        usuario.setProveedorId(1);
         usuario.setEstado("ACTIVO");
         usuario.setUltimoLogin(LocalDateTime.now());
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
@@ -126,7 +127,8 @@ public class AuthService {
         usuario.setPassword(null);
         usuario.setRol(rolCliente);
         usuario.setProvider("GOOGLE");
-        usuario.setTipo_usuario(2);
+        usuario.setTipo_usuario(1);
+        usuario.setProveedorId(2);
         usuario.setFoto(picture);
         usuario.setEstado("ACTIVO");
         usuario.setUltimoLogin(LocalDateTime.now());

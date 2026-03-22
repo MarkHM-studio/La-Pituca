@@ -35,6 +35,7 @@ public class UsuarioService {
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setEstado("ACTIVO");
         usuario.setProvider("LOCAL");
+        usuario.setProveedorId(1);
         usuario.setRol(rol);
         usuario.setTipo_usuario(1);
         usuarioRepository.save(usuario);
@@ -63,6 +64,12 @@ public class UsuarioService {
         usuarioExistente.setUsername(request.getUsername());
         usuarioExistente.setPassword(passwordEncoder.encode(request.getPassword()));
         usuarioExistente.setRol(rol);
+        if (usuarioExistente.getProveedorId() == null) {
+            usuarioExistente.setProveedorId(1);
+        }
+        if (usuarioExistente.getTipo_usuario() == null) {
+            usuarioExistente.setTipo_usuario(1);
+        }
         usuarioRepository.save(usuarioExistente);
         return toResponse(usuarioExistente);
     }

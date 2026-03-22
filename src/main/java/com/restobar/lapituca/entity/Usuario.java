@@ -36,6 +36,9 @@ public class Usuario {
     @Column(nullable = false, length = 25)
     private String provider; // LOCAL o GOOGLE
 
+    @Column(name = "proveedor_id", nullable = false)
+    private Integer proveedorId;
+
     @Column(nullable = false)
     private Integer tipo_usuario;
 

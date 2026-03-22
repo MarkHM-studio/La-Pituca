@@ -41,7 +41,7 @@ public class Cliente {
     private String estado;
 
     @Column(nullable = false, length = 25)
-    private String tipo_cliente;
+    private String tipo_cliente; //NUEVO, AMATEUR, VIP
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
