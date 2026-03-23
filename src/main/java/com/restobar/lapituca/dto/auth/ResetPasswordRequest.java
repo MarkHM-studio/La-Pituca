@@ -1,5 +1,6 @@
 package com.restobar.lapituca.dto.auth;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -12,7 +13,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResetPasswordRequest {
 
-    @NotBlank(message = "El token es obligatorio")
+    @NotBlank(message = "El correo es obligatorio")
+    @Email(message = "El correo debe ser válido")
+    private String correo;
+
+    @NotBlank(message = "El código de recuperación es obligatorio")
     private String token;
 
     @NotBlank(message = "La contraseña es obligatoria")

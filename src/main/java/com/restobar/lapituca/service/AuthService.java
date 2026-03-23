@@ -22,17 +22,19 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private static final DateTimeFormatter TOKEN_EXPIRY_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
@@ -41,9 +43,13 @@ public class AuthService {
     private final DistritoRepository distritoRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final PasswordRecoveryEmailService passwordRecoveryEmailService;
 
     @Value("${app.auth.reset-password-expiration-minutes:30}")
     private long resetPasswordExpirationMinutes;
+
+    @Value("${app.frontend.reset-password-url:http://localhost:5173/reset-password}")
+    private String frontendResetPasswordUrl;
 
     public LoginResponse login(LoginRequest request) {
         try {
@@ -54,7 +60,7 @@ public class AuthService {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Correo o contraseña incorrectos");
         }
 
-        Usuario usuario = usuarioRepository.findByUsername(request.getCorreo())
+        Usuario usuario = usuarioRepository.findByUsername(normalizeEmail(request.getCorreo()))
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
 
         usuario.setUltimoLogin(LocalDateTime.now());
@@ -74,7 +80,7 @@ public class AuthService {
                 .orElseGet(() -> crearDistrito(request.getDistrito()));
 
         Usuario usuario = new Usuario();
-        usuario.setUsername(request.getCorreo().trim().toLowerCase());
+        usuario.setUsername(normalizeEmail(request.getCorreo()));
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setRol(rolCliente);
         usuario.setProvider("LOCAL");
@@ -88,7 +94,7 @@ public class AuthService {
         cliente.setNombre(request.getNombre().trim());
         cliente.setApellido(request.getApellido().trim());
         cliente.setFechaNacimiento(request.getFechaNacimiento());
-        cliente.setCorreo(request.getCorreo().trim().toLowerCase());
+        cliente.setCorreo(normalizeEmail(request.getCorreo()));
         cliente.setTelefono(request.getTelefono().trim());
         cliente.setDistrito(distrito);
         cliente.setEstado("ACTIVO");
@@ -109,24 +115,46 @@ public class AuthService {
 
     @Transactional
     public ForgotPasswordResponse requestPasswordReset(ForgotPasswordRequest request) {
-        Usuario usuario = usuarioRepository.findByUsername(request.getCorreo().trim().toLowerCase())
+        String correo = normalizeEmail(request.getCorreo());
+        Usuario usuario = usuarioRepository.findByUsername(correo)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "No existe una cuenta asociada a ese correo"));
 
         if (!"LOCAL".equalsIgnoreCase(usuario.getProvider())) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Esta cuenta fue creada con Google. Inicia sesión con Google.");
         }
 
-        String token = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        Cliente cliente = clienteRepository.findByCorreo(correo)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Cliente no encontrado para el correo indicado"));
+
+        String rawToken = generateReadableResetToken();
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(resetPasswordExpirationMinutes);
 
-        usuario.setResetPasswordToken(token);
+        usuario.setResetPasswordToken(passwordEncoder.encode(rawToken));
         usuario.setResetPasswordExpiry(expiresAt);
         usuarioRepository.save(usuario);
 
+        String resetLink = buildResetLink(correo, rawToken);
+        passwordRecoveryEmailService.sendPasswordRecoveryEmail(
+                correo,
+                cliente.getNombre(),
+                rawToken,
+                resetLink,
+                expiresAt
+        );
+
         return new ForgotPasswordResponse(
-                "Se generó un token temporal de recuperación. Integra el envío por correo para producción.",
-                token,
-                expiresAt.format(TOKEN_EXPIRY_FORMATTER)
+                "Te enviamos un correo con el código y enlace de recuperación. Revisa tu bandeja de entrada."
+        );
+    }
+
+    public VerifyResetTokenResponse verifyResetToken(VerifyResetTokenRequest request) {
+        Usuario usuario = findUsuarioForReset(request.getCorreo());
+        assertValidResetToken(usuario, request.getToken());
+
+        return new VerifyResetTokenResponse(
+                "Código verificado correctamente. Ya puedes definir tu nueva contraseña.",
+                normalizeEmail(request.getCorreo()),
+                usuario.getResetPasswordExpiry().format(TOKEN_EXPIRY_FORMATTER)
         );
     }
 
@@ -136,19 +164,15 @@ public class AuthService {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La confirmación de contraseña no coincide");
         }
 
-        Usuario usuario = usuarioRepository.findByResetPasswordToken(request.getToken())
-                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "El token de recuperación no es válido"));
-
-        if (usuario.getResetPasswordExpiry() == null || usuario.getResetPasswordExpiry().isBefore(LocalDateTime.now())) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED, "El token de recuperación ha expirado");
-        }
+        Usuario usuario = findUsuarioForReset(request.getCorreo());
+        assertValidResetToken(usuario, request.getToken());
 
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setResetPasswordToken(null);
         usuario.setResetPasswordExpiry(null);
         usuarioRepository.save(usuario);
 
-        return new PasswordResetResponse("La contraseña se actualizó correctamente");
+        return new PasswordResetResponse("La contraseña se actualizó correctamente. Ahora inicia sesión normalmente.");
     }
 
     public AuthMeResponse getAuthenticatedUser(String username) {
@@ -176,7 +200,7 @@ public class AuthService {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Google no devolvió un correo válido");
         }
 
-        String emailNormalizado = email.trim().toLowerCase();
+        String emailNormalizado = normalizeEmail(email);
         Usuario usuario = usuarioRepository.findByUsername(emailNormalizado)
                 .orElseGet(() -> crearUsuarioGoogle(emailNormalizado, fullName, picture));
 
@@ -193,7 +217,7 @@ public class AuthService {
     }
 
     private void validarRegistroCliente(UsuarioClienteRequest request) {
-        String correo = request.getCorreo().trim().toLowerCase();
+        String correo = normalizeEmail(request.getCorreo());
         String telefono = request.getTelefono().trim();
 
         if (usuarioRepository.existsByUsername(correo)) {
@@ -207,6 +231,48 @@ public class AuthService {
         if (clienteRepository.existsByTelefono(telefono)) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese teléfono");
         }
+    }
+
+    private Usuario findUsuarioForReset(String correo) {
+        String correoNormalizado = normalizeEmail(correo);
+        Usuario usuario = usuarioRepository.findByUsername(correoNormalizado)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "No existe una cuenta asociada a ese correo"));
+
+        if (!"LOCAL".equalsIgnoreCase(usuario.getProvider())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Esta cuenta fue creada con Google. Inicia sesión con Google.");
+        }
+        return usuario;
+    }
+
+    private void assertValidResetToken(Usuario usuario, String rawToken) {
+        if (usuario.getResetPasswordToken() == null || usuario.getResetPasswordExpiry() == null) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "No existe un proceso de recuperación activo para este usuario");
+        }
+
+        if (usuario.getResetPasswordExpiry().isBefore(LocalDateTime.now())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "El código de recuperación ha expirado");
+        }
+
+        if (!passwordEncoder.matches(rawToken.trim(), usuario.getResetPasswordToken())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "El código de recuperación no es válido");
+        }
+    }
+
+    private String buildResetLink(String correo, String token) {
+        return UriComponentsBuilder.fromUriString(frontendResetPasswordUrl)
+                .queryParam("email", correo)
+                .queryParam("token", token)
+                .build()
+                .toUriString();
+    }
+
+    private String generateReadableResetToken() {
+        int code = 100000 + SECURE_RANDOM.nextInt(900000);
+        return String.valueOf(code);
+    }
+
+    private String normalizeEmail(String correo) {
+        return correo.trim().toLowerCase();
     }
 
     private Distrito crearDistrito(String nombreDistrito) {

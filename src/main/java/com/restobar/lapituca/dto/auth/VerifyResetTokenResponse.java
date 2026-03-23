@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ForgotPasswordResponse {
+public class VerifyResetTokenResponse {
     private String message;
+    private String correo;
+    private String expiresAt;
 }
