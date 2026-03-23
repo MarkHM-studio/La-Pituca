@@ -1,14 +1,12 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.auth.LoginRequest;
-import com.restobar.lapituca.dto.auth.LoginResponse;
+import com.restobar.lapituca.dto.auth.*;
 import com.restobar.lapituca.dto.request.UsuarioClienteRequest;
-import com.restobar.lapituca.dto.response.ClienteResponse;
 import com.restobar.lapituca.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,7 +22,22 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ClienteResponse> register(@Valid @RequestBody UsuarioClienteRequest request) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody UsuarioClienteRequest request) {
         return ResponseEntity.ok(authService.registerClienteLocal(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ForgotPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.requestPasswordReset(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<PasswordResetResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AuthMeResponse> me(Authentication authentication) {
+        return ResponseEntity.ok(authService.getAuthenticatedUser(authentication.getName()));
     }
 }

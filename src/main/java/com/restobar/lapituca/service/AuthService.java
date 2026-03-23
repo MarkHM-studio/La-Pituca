@@ -1,7 +1,6 @@
 package com.restobar.lapituca.service;
 
-import com.restobar.lapituca.dto.auth.LoginRequest;
-import com.restobar.lapituca.dto.auth.LoginResponse;
+import com.restobar.lapituca.dto.auth.*;
 import com.restobar.lapituca.dto.request.UsuarioClienteRequest;
 import com.restobar.lapituca.dto.response.ClienteResponse;
 import com.restobar.lapituca.entity.Cliente;
@@ -16,18 +15,24 @@ import com.restobar.lapituca.repository.RolRepository;
 import com.restobar.lapituca.repository.UsuarioRepository;
 import com.restobar.lapituca.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final DateTimeFormatter TOKEN_EXPIRY_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
@@ -37,13 +42,16 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    @Value("${app.auth.reset-password-expiration-minutes:30}")
+    private long resetPasswordExpirationMinutes;
+
     public LoginResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getCorreo(), request.getPassword())
             );
         } catch (AuthenticationException ex) {
-            throw new ApiException(ErrorCode.UNAUTHORIZED, "Correo o contraseña inválidos");
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Correo o contraseña incorrectos");
         }
 
         Usuario usuario = usuarioRepository.findByUsername(request.getCorreo())
@@ -55,27 +63,18 @@ public class AuthService {
         return buildLoginResponse(usuario);
     }
 
-    public ClienteResponse registerClienteLocal(UsuarioClienteRequest request) {
-        if (usuarioRepository.existsByUsername(request.getCorreo())) {
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un usuario registrado con ese correo");
-        }
+    @Transactional
+    public RegisterResponse registerClienteLocal(UsuarioClienteRequest request) {
+        validarRegistroCliente(request);
 
-        if (clienteRepository.existsByCorreo(request.getCorreo())) {
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese correo");
-        }
-
-        if (clienteRepository.existsByTelefono(request.getTelefono())) {
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese teléfono");
-        }
-
-        Rol rolCliente = rolRepository.findByNombreIgnoreCase("ADMINISTRADOR")
+        Rol rolCliente = rolRepository.findByNombreIgnoreCase("CLIENTE")
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "No existe el rol CLIENTE"));
 
-        Distrito distrito = distritoRepository.findByNombreIgnoreCase(request.getDistrito())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Distrito no encontrado: " + request.getDistrito()));
+        Distrito distrito = distritoRepository.findByNombreIgnoreCase(request.getDistrito().trim())
+                .orElseGet(() -> crearDistrito(request.getDistrito()));
 
         Usuario usuario = new Usuario();
-        usuario.setUsername(request.getCorreo());
+        usuario.setUsername(request.getCorreo().trim().toLowerCase());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setRol(rolCliente);
         usuario.setProvider("LOCAL");
@@ -86,26 +85,100 @@ public class AuthService {
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
 
         Cliente cliente = new Cliente();
-        cliente.setNombre(request.getNombre());
-        cliente.setApellido(request.getApellido());
+        cliente.setNombre(request.getNombre().trim());
+        cliente.setApellido(request.getApellido().trim());
         cliente.setFechaNacimiento(request.getFechaNacimiento());
-        cliente.setCorreo(request.getCorreo());
-        cliente.setTelefono(request.getTelefono());
+        cliente.setCorreo(request.getCorreo().trim().toLowerCase());
+        cliente.setTelefono(request.getTelefono().trim());
         cliente.setDistrito(distrito);
         cliente.setEstado("ACTIVO");
         cliente.setTipo_cliente("NUEVO");
         cliente.setUsuario(usuarioGuardado);
         Cliente clienteGuardado = clienteRepository.save(cliente);
 
-        return toClienteResponse(clienteGuardado);
+        LoginResponse login = buildLoginResponse(usuarioGuardado);
+        return new RegisterResponse(
+                login.getToken(),
+                login.getUsuarioId(),
+                login.getCorreo(),
+                login.getRol(),
+                login.getProveedor(),
+                toClienteResponse(clienteGuardado)
+        );
     }
 
+    @Transactional
+    public ForgotPasswordResponse requestPasswordReset(ForgotPasswordRequest request) {
+        Usuario usuario = usuarioRepository.findByUsername(request.getCorreo().trim().toLowerCase())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "No existe una cuenta asociada a ese correo"));
+
+        if (!"LOCAL".equalsIgnoreCase(usuario.getProvider())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Esta cuenta fue creada con Google. Inicia sesión con Google.");
+        }
+
+        String token = UUID.randomUUID().toString().replace("-", "") + UUID.randomUUID().toString().replace("-", "");
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(resetPasswordExpirationMinutes);
+
+        usuario.setResetPasswordToken(token);
+        usuario.setResetPasswordExpiry(expiresAt);
+        usuarioRepository.save(usuario);
+
+        return new ForgotPasswordResponse(
+                "Se generó un token temporal de recuperación. Integra el envío por correo para producción.",
+                token,
+                expiresAt.format(TOKEN_EXPIRY_FORMATTER)
+        );
+    }
+
+    @Transactional
+    public PasswordResetResponse resetPassword(ResetPasswordRequest request) {
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La confirmación de contraseña no coincide");
+        }
+
+        Usuario usuario = usuarioRepository.findByResetPasswordToken(request.getToken())
+                .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "El token de recuperación no es válido"));
+
+        if (usuario.getResetPasswordExpiry() == null || usuario.getResetPasswordExpiry().isBefore(LocalDateTime.now())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "El token de recuperación ha expirado");
+        }
+
+        usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        usuario.setResetPasswordToken(null);
+        usuario.setResetPasswordExpiry(null);
+        usuarioRepository.save(usuario);
+
+        return new PasswordResetResponse("La contraseña se actualizó correctamente");
+    }
+
+    public AuthMeResponse getAuthenticatedUser(String username) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+
+        Cliente cliente = clienteRepository.findByCorreo(usuario.getUsername()).orElse(null);
+        String nombreCompleto = cliente == null ? null : (cliente.getNombre() + " " + cliente.getApellido()).trim();
+
+        return new AuthMeResponse(
+                usuario.getId(),
+                usuario.getUsername(),
+                usuario.getRol().getNombre(),
+                usuario.getProvider(),
+                usuario.getEstado(),
+                cliente != null ? cliente.getId() : null,
+                nombreCompleto,
+                usuario.getFoto()
+        );
+    }
+
+    @Transactional
     public LoginResponse procesarLoginGoogle(String email, String fullName, String picture) {
         if (email == null || email.isBlank()) {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Google no devolvió un correo válido");
         }
 
-        Usuario usuario = usuarioRepository.findByUsername(email).orElseGet(() -> crearUsuarioGoogle(email, fullName, picture));
+        String emailNormalizado = email.trim().toLowerCase();
+        Usuario usuario = usuarioRepository.findByUsername(emailNormalizado)
+                .orElseGet(() -> crearUsuarioGoogle(emailNormalizado, fullName, picture));
 
         usuario.setUltimoLogin(LocalDateTime.now());
         if (usuario.getFoto() == null && picture != null) {
@@ -113,9 +186,33 @@ public class AuthService {
         }
         usuarioRepository.save(usuario);
 
-        clienteRepository.findByCorreo(email).orElseGet(() -> crearClienteGoogle(email, fullName, usuario));
+        clienteRepository.findByCorreo(emailNormalizado)
+                .orElseGet(() -> crearClienteGoogle(emailNormalizado, fullName, usuario));
 
         return buildLoginResponse(usuario);
+    }
+
+    private void validarRegistroCliente(UsuarioClienteRequest request) {
+        String correo = request.getCorreo().trim().toLowerCase();
+        String telefono = request.getTelefono().trim();
+
+        if (usuarioRepository.existsByUsername(correo)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un usuario registrado con ese correo");
+        }
+
+        if (clienteRepository.existsByCorreo(correo)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese correo");
+        }
+
+        if (clienteRepository.existsByTelefono(telefono)) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un cliente registrado con ese teléfono");
+        }
+    }
+
+    private Distrito crearDistrito(String nombreDistrito) {
+        Distrito distrito = new Distrito();
+        distrito.setNombre(nombreDistrito.trim());
+        return distritoRepository.save(distrito);
     }
 
     private Usuario crearUsuarioGoogle(String email, String fullName, String picture) {

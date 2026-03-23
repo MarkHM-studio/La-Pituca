@@ -1,7 +1,6 @@
 package com.restobar.lapituca.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -48,6 +47,12 @@ public class Usuario {
 
     @Column(name = "ultimo_login")
     private LocalDateTime ultimoLogin;
+
+    @Column(name = "reset_password_token", length = 120)
+    private String resetPasswordToken;
+
+    @Column(name = "reset_password_expiry")
+    private LocalDateTime resetPasswordExpiry;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
