@@ -22,30 +22,4 @@ public class TransaccionService {
     private final UsuarioRepository usuarioRepository;
     private final ReservaRepository reservaRepository;
 
-    public void registrarPagoReserva(TransaccionRequest request){
-
-        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
-                        "Usuario no encontrado"));
-
-        Reserva reserva = reservaRepository.findById(request.getReservaId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
-                        "Reserva no encontrada"));
-
-        if(reserva.getTransaccion()!=null){
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,
-                    "La reserva ya tiene una transacción registrada");
-        }
-
-        Transaccion transaccion = new Transaccion();
-
-        transaccion.setMercadoPagoId(request.getMercadoPagoId());
-        transaccion.setMonto(request.getMonto());
-        transaccion.setUsuario(usuario);
-
-        Transaccion guardada = transaccionRepository.save(transaccion);
-
-        reserva.setTransaccion(guardada);
-        reservaRepository.save(reserva);
-    }
 }

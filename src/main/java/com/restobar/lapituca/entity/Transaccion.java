@@ -17,33 +17,42 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Transaccion {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ID que devuelve Mercado Pago (payment.id)
     @Column(nullable = false)
-    private Long mercadoPagoId;
+    private String mercadoPagoPaymentId;
 
-    @Digits(integer = 4, fraction = 2)
-    @Column(nullable = false, precision = 6, scale = 2)
+    // Para vincular con tu reserva (external_reference)
+    @Column(nullable = false)
+    private String externalReference;
+
+    // Estado del pago
+    @Column(nullable = false)
+    private String estado; // PENDING, APPROVED, REJECTED
+
+    @Digits(integer = 6, fraction = 2)
+    @Column(nullable = false, precision = 8, scale = 2)
     private BigDecimal monto;
 
-    @CreationTimestamp()
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime fecha_Pago;
+    private LocalDateTime fechaPago;
 
     @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime fechaHora_actualizacion;
+    private LocalDateTime fechaActualizacion;
 
-    //Relaciones
-    //Transaccion-Usuario
+    // Relación con usuario
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
-    //Transaccion-Comprobante
-    @OneToOne()
-    @JoinColumn(name = "id_comprobante")
-    private Comprobante comprobante;
+    // 🔥 Relación correcta: MUCHAS transacciones pueden existir (intentos)
+    @ManyToOne
+    @JoinColumn(name = "id_reserva")
+    private Reserva reserva;
 }

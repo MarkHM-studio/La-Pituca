@@ -13,9 +13,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
-@Table(name = "Reserva")
+@Table(name = "reserva")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,16 +34,16 @@ public class Reserva {
 
     @Positive
     @Min(1)
-    @Column(nullable = false, length = 25)
+    @Column(nullable = false)
     private Integer num_personas;
 
-    @Size(min = 5, max = 25)
-    @Column(nullable = false, length = 25)
+    @Column(nullable = false)
     private String estado;
+    // ESPERANDO_PAGO, PAGADO, CANCELADO, EXPIRADO
 
     private LocalDateTime fechaHora_expiracionPago;
 
-    @CreationTimestamp()
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime fechaHora_registro;
 
@@ -50,19 +51,19 @@ public class Reserva {
     @Column(nullable = false)
     private LocalDateTime fechaHora_actualizacion;
 
-    //Relaciones
-    //Reserva-Usuario
+    // Relaciones
+
+    // Reserva-Usuario
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
 
     //Reserva-Grupo
     @OneToOne
-    @JoinColumn(name = "id_Grupo")
+    @JoinColumn(name = "id_grupo")
     private Grupo grupo;
 
     //Reserva-Transaccion
-    @OneToOne
-    @JoinColumn(name = "id_transaccion")
-    private Transaccion transaccion;
+    @OneToMany(mappedBy = "reserva", cascade = CascadeType.ALL)
+    private List<Transaccion> transacciones;
 }
