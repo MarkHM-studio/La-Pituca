@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,6 +37,8 @@ public class ReservaService {
 
     @Transactional
     public ReservaResponse crear(ReservaRequest request){
+
+        actualizarReservasExpiradas();
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
                 .orElseThrow(() -> new ApiException(
@@ -182,7 +185,19 @@ public class ReservaService {
     private ReservaResponse mapToResponse(Reserva reserva){
 
         Long grupoId = reserva.getGrupo() != null ? reserva.getGrupo().getId() : null;
-        Long transaccionId = reserva.getTransaccion() != null ? reserva.getTransaccion().getId() : null;
+
+        List<Long> transaccionesIds = reserva.getTransacciones() == null
+                ? List.of()
+                : reserva.getTransacciones().stream()
+                .map(Transaccion::getId)
+                .toList();
+
+        Long ultimaTransaccionId = reserva.getTransacciones() == null
+                ? null
+                : reserva.getTransacciones().stream()
+                .max(Comparator.comparing(Transaccion::getFechaActualizacion))
+                .map(Transaccion::getId)
+                .orElse(null);
 
         return new ReservaResponse(
                 reserva.getId(),
@@ -192,12 +207,15 @@ public class ReservaService {
                 reserva.getEstado(),
                 reserva.getUsuario().getId(),
                 grupoId,
-                transaccionId,
+                ultimaTransaccionId,
+                transaccionesIds,
                 reserva.getFechaHora_registro()
         );
     }
 
     public List<MesasDisponiblesResponse> verMesasDisponibles(LocalDate fecha, LocalTime hora){
+
+        actualizarReservasExpiradas();
 
         LocalTime fin = hora.plusHours(1);
 
@@ -224,13 +242,7 @@ public class ReservaService {
     /*
     public ReservaResponse actualizar(Long id, ReservaRequest request){
 
-        Reserva reserva = reservaRepository.findById(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
-                        "Reserva no encontrada"));
-
-        if("CANCELADO".equalsIgnoreCase(reserva.getEstado())){
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR,
-                    "No se puede modificar una reserva cancelada");
+@@ -234,56 +252,64 @@ public class ReservaService {
         }
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
@@ -256,6 +268,8 @@ public class ReservaService {
 
     public List<ReservaResponse> listar(){
 
+        actualizarReservasExpiradas();
+
         return reservaRepository.findAll()
                 .stream()
                 .map(this::mapToResponse)
@@ -263,6 +277,8 @@ public class ReservaService {
     }
 
     public ReservaResponse obtenerPorId(Long id){
+
+        actualizarReservasExpiradas();
 
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
@@ -280,6 +296,10 @@ public class ReservaService {
         reserva.setEstado("CANCELADO");
 
         reservaRepository.save(reserva);
+    }
+
+    private void actualizarReservasExpiradas() {
+        reservaRepository.marcarReservasExpiradas();
     }
 
     /* Mejora para producción (muy recomendable) acelera findReservasSolapadas muchísimo cuando tengas muchas reservas.

@@ -54,7 +54,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**", "/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/distrito/**").permitAll()
                         .requestMatchers("/api/usuario/**", "/api/trabajador/**").hasAnyRole("ADMINISTRADOR")
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/mercadopago/preferencias").hasAnyRole("CLIENTE")
+                        .requestMatchers("/api/mercadopago/webhook").permitAll()
+                        .requestMatchers("/api/reserva/**").hasAnyRole("CLIENTE")
+
                 )
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(user -> user.userService(customOAuth2UserService))

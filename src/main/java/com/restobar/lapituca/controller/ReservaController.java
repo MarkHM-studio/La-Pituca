@@ -6,6 +6,7 @@ import com.restobar.lapituca.service.ReservaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +22,7 @@ public class ReservaController {
     private final ReservaService reservaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<ReservaResponse> crear(@Valid @RequestBody ReservaRequest request){
         ReservaResponse reservaResponse = reservaService.crear(request);
 

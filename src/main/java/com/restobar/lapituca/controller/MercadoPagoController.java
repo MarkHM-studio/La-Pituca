@@ -1,49 +1,42 @@
 package com.restobar.lapituca.controller;
 
-import com.mercadopago.client.preference.PreferenceClient;
-import com.mercadopago.client.preference.PreferenceItemRequest;
-import com.mercadopago.client.preference.PreferenceRequest;
-import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.resources.preference.Preference;
+import com.restobar.lapituca.dto.request.mercadopago.CrearPreferenciaPagoRequest;
+import com.restobar.lapituca.dto.response.mercadopago.CrearPreferenciaPagoResponse;
+import com.restobar.lapituca.dto.response.mercadopago.WebhookProcesadoResponse;
+import com.restobar.lapituca.service.MercadoPagoService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.util.List;
+import javax.annotation.security.PermitAll;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/pago")
-@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/api/mercadopago")
+@RequiredArgsConstructor
 public class MercadoPagoController {
 
-    @PostMapping
-    public Map<String, String> pagar() throws Exception{
+    private final MercadoPagoService mercadoPagoService;
 
-        try {
-            PreferenceItemRequest item =
-                    PreferenceItemRequest.builder()
-                            .title("Producto de prueba")
-                            .quantity(1)
-                            .currencyId("PEN")
-                            .unitPrice(new BigDecimal("50"))
-                            .build();
+    @PostMapping("/preferencias")
+    @PreAuthorize("hasRole('CLIENTE')")
+    public ResponseEntity<CrearPreferenciaPagoResponse> crearPreferencia(
+            @Valid @RequestBody CrearPreferenciaPagoRequest request
+    ) {
+        CrearPreferenciaPagoResponse response = mercadoPagoService.crearPreferenciaPago(request);
+        return ResponseEntity.ok(response);
+    }
 
-            PreferenceRequest preferenceRequest =
-                    PreferenceRequest.builder()
-                            .items(List.of(item))
-                            .build();
-
-            PreferenceRequest.builder()
-                    .items(List.of(item))
-                    .notificationUrl("http://localhost:8080/api/webhook");
-
-            PreferenceClient client = new PreferenceClient();
-            Preference preference = client.create(preferenceRequest);
-
-            return Map.of("url", preference.getInitPoint());
-        } catch (MPApiException e) {
-            System.out.println(e.getApiResponse().getContent());
-            return Map.of("error", e.getApiResponse().getContent());
-        }
+    @PostMapping("/webhook")
+    @PermitAll
+    public ResponseEntity<WebhookProcesadoResponse> recibirWebhook(
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "x-signature", required = false) String xSignature,
+            @RequestHeader(value = "x-request-id", required = false) String xRequestId
+    ) {
+        mercadoPagoService.procesarWebhook(payload, xSignature, xRequestId);
+        return ResponseEntity.ok(new WebhookProcesadoResponse("Webhook recibido"));
     }
 }

@@ -17,7 +17,7 @@ public class ReservaRequest {
 
     @NotNull(message = "La fecha de reserva es obligatoria")
     @FutureOrPresent(message = "La fecha debe ser hoy o futura")
-    @JsonFormat(pattern = "dd/MM/yyyy")
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaReserva;
 
     @NotNull(message = "La hora de reserva es obligatoria")

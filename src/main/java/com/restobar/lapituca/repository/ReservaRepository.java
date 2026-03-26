@@ -2,6 +2,7 @@ package com.restobar.lapituca.repository;
 
 import com.restobar.lapituca.entity.Reserva;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,13 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
            WHERE r.fecha_reserva = :fecha
            AND r.hora_reserva >= :inicio
            AND r.hora_reserva < :fin
+           AND r.estado <> 'CANCELADO'
+           AND r.estado <> 'EXPIRADO'
+           AND NOT (
+               r.estado = 'ESPERANDO PAGO'
+               AND r.fechaHora_expiracionPago IS NOT NULL
+               AND r.fechaHora_expiracionPago < CURRENT_TIMESTAMP
+           )
            """)
     List<Reserva> findReservasEnRango(
             @Param("fecha") LocalDate fecha,
@@ -42,6 +50,12 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
         JOIN g.detalleMesas dm
         WHERE r.fecha_reserva = :fecha
         AND r.estado <> 'CANCELADO'
+        AND r.estado <> 'EXPIRADO'
+        AND NOT (
+            r.estado = 'ESPERANDO PAGO'
+            AND r.fechaHora_expiracionPago IS NOT NULL
+            AND r.fechaHora_expiracionPago < CURRENT_TIMESTAMP
+        )
         AND dm.mesa.id IN :mesasId
         AND r.hora_reserva < :fin
         AND r.hora_reserva > :inicioMenosUnaHora
@@ -52,4 +66,14 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
             @Param("fin") LocalTime fin,
             @Param("mesasId") Set<Long> mesasId
     );
+
+    @Modifying
+    @Query("""
+        UPDATE Reserva r
+        SET r.estado = 'EXPIRADO'
+        WHERE r.estado = 'ESPERANDO PAGO'
+        AND r.fechaHora_expiracionPago IS NOT NULL
+        AND r.fechaHora_expiracionPago < CURRENT_TIMESTAMP
+    """)
+    int marcarReservasExpiradas();
 }

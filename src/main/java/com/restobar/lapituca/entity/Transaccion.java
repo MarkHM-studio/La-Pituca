@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Transaccion")
+@Table(name = "transaccion")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -23,19 +23,30 @@ public class Transaccion {
     private Long id;
 
     // ID que devuelve Mercado Pago (payment.id)
-    @Column(nullable = false)
+    @Column(length = 64)
     private String mercadoPagoPaymentId;
 
-    // Para vincular con tu reserva (external_reference)
-    @Column(nullable = false)
+    // ID de preferencia de Mercado Pago
+    @Column(length = 64)
+    private String mercadoPagoPreferenceId;
+
+    // Para vincular la notificación con la reserva
+    @Column(nullable = false, length = 64)
     private String externalReference;
 
-    // Estado del pago
-    @Column(nullable = false)
-    private String estado; // PENDING, APPROVED, REJECTED
+    // Estado interno de la transacción
+    @Column(nullable = false, length = 40)
+    private String estado;
 
-    @Digits(integer = 6, fraction = 2)
-    @Column(nullable = false, precision = 8, scale = 2)
+    // Estado devuelto por Mercado Pago (approved, pending, rejected, etc.)
+    @Column(length = 40)
+    private String estadoMercadoPago;
+
+    @Column(length = 120)
+    private String detalleEstadoMercadoPago;
+
+    @Digits(integer = 8, fraction = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
 
     @CreationTimestamp
@@ -46,13 +57,13 @@ public class Transaccion {
     @Column(nullable = false)
     private LocalDateTime fechaActualizacion;
 
-    // Relación con usuario
+    //Relaciones
+    //Transaccion-Usuario
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
-
-    // 🔥 Relación correcta: MUCHAS transacciones pueden existir (intentos)
-    @ManyToOne
-    @JoinColumn(name = "id_reserva")
+    //Transaccion-Reserva
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "id_reserva", nullable = false)
     private Reserva reserva;
 }

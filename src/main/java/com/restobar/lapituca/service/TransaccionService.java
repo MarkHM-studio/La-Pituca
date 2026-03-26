@@ -22,4 +22,26 @@ public class TransaccionService {
     private final UsuarioRepository usuarioRepository;
     private final ReservaRepository reservaRepository;
 
+    public void registrarPagoReserva(TransaccionRequest request) {
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+
+        Reserva reserva = reservaRepository.findById(request.getReservaId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Reserva no encontrada"));
+
+        Transaccion transaccion = new Transaccion();
+        transaccion.setMercadoPagoPaymentId(request.getMercadoPagoPaymentId());
+        transaccion.setExternalReference(String.valueOf(reserva.getId()));
+        transaccion.setEstado("PAGO_APROBADO");
+        transaccion.setEstadoMercadoPago("approved");
+        transaccion.setMonto(request.getMonto());
+        transaccion.setUsuario(usuario);
+        transaccion.setReserva(reserva);
+
+        transaccionRepository.save(transaccion);
+
+        reserva.setEstado("PAGADO");
+        reservaRepository.save(reserva);
+    }
 }
