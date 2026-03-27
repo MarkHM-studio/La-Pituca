@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.security.PermitAll;
 import java.net.URI;
 import java.util.List;
 
@@ -22,6 +24,7 @@ public class DistritoController {
     private final DistritoService distritoService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<DistritoResponse> crear(@Valid @RequestBody DistritoRequest request) {
         DistritoResponse response = distritoService.guardar(request);
         return ResponseEntity.created(URI.create("/api/distrito/" + response.getId())).body(response);
@@ -38,11 +41,13 @@ public class DistritoController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<DistritoResponse> actualizar(@PathVariable @Positive Long id, @Valid @RequestBody DistritoRequest request) {
         return ResponseEntity.ok(distritoService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive Long id) {
         distritoService.eliminar(id);
         return ResponseEntity.noContent().build();

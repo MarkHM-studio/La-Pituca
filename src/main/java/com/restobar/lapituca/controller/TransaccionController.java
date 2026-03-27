@@ -1,15 +1,16 @@
 package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.request.TransaccionRequest;
+import com.restobar.lapituca.dto.response.TransaccionResponse;
 import com.restobar.lapituca.service.TransaccionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/transacciones")
@@ -19,12 +20,9 @@ public class TransaccionController {
 
     private final TransaccionService transaccionService;
 
-    @PostMapping
-    public ResponseEntity<String> registrarPagoReserva(
-            @Valid @RequestBody TransaccionRequest request){
-
-        transaccionService.registrarPagoReserva(request);
-
-        return ResponseEntity.ok("Pago registrado correctamente");
+    @GetMapping
+    @PreAuthorize("hasAnyRole('RECEPCIONISTA', 'ADMINISTRADOR')")
+    public ResponseEntity <List<TransaccionResponse>> listarTodos(){
+        return ResponseEntity.ok(transaccionService.listarTodos());
     }
 }

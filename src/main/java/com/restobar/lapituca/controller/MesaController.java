@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class MesaController {
     private final MesaService mesaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<MesaResponse> crear(@Valid @RequestBody MesaRequest request){
         MesaResponse mesaResponse = mesaService.guardar(request);
 
@@ -32,27 +34,32 @@ public class MesaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<MesaResponse>> listarTodos(){
         return ResponseEntity.ok(mesaService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<MesaResponse> obtenerPorId(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         return ResponseEntity.ok(mesaService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<MesaResponse> actualizar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id , @Valid @RequestBody MesaRequest request){
         return ResponseEntity.ok(mesaService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         mesaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/ocupadas")
+    @PreAuthorize("hasRole('RECEPCIONISTA')")
     public ResponseEntity<List<MesasOcupadasResponse>> obtenerMesasOcupadas() {
         return ResponseEntity.ok(mesaService.obtenerMesasOcupadas());
     }

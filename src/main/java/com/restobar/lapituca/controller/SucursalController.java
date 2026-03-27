@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class SucursalController {
     private final SucursalService sucursalService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<SucursalResponse> crear(@Valid @RequestBody SucursalRequest request){
         SucursalResponse sucursalResponse = sucursalService.guardar(request);
 
@@ -32,23 +34,27 @@ public class SucursalController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<SucursalResponse>> listarTodos(){
         return ResponseEntity.ok(sucursalService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<SucursalResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         return ResponseEntity.ok(sucursalService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<SucursalResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, SucursalRequest request){
         return ResponseEntity.ok(sucursalService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         sucursalService.eliminar(id);

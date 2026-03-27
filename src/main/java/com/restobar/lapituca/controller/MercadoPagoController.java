@@ -30,7 +30,6 @@ public class MercadoPagoController {
     }
 
     @PostMapping("/webhook")
-    @PermitAll
     public ResponseEntity<WebhookProcesadoResponse> recibirWebhook(
             @RequestBody Map<String, Object> payload,
             @RequestHeader(value = "x-signature", required = false) String xSignature,

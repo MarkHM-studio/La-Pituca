@@ -41,12 +41,13 @@ public class ReservaController {
     }*/
 
     @GetMapping
+    @PreAuthorize("hasRole('RECEPCIONISTA')")
     public ResponseEntity<List<ReservaResponse>> listar(){
-
         return ResponseEntity.ok(reservaService.listar());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('RECEPCIONISTA')")
     public ResponseEntity<ReservaResponse> obtenerPorId(
             @PathVariable Long id){
 
@@ -54,6 +55,7 @@ public class ReservaController {
     }
 
     @PatchMapping("/{id}/cancelar")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<Void> cancelar(@PathVariable Long id){
 
         reservaService.cancelar(id);

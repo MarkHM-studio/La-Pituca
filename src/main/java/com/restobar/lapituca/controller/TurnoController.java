@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class TurnoController {
     private final TurnoService turnoService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TurnoResponse> crear(@Valid @RequestBody TurnoRequest request) {
         TurnoResponse turnoResponse = turnoService.guardar(request);
 
@@ -31,23 +33,27 @@ public class TurnoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<TurnoResponse>> listarTodos() {
         return ResponseEntity.ok(turnoService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TurnoResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         return ResponseEntity.ok(turnoService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TurnoResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, TurnoRequest request) {
         return ResponseEntity.ok(turnoService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         turnoService.eliminar(id);

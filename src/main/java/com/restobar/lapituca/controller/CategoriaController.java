@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class CategoriaController {
     private final CategoriaService categoriaService;
 
     @PostMapping()
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<CategoriaResponse> crear(@Valid @RequestBody CategoriaRequest request){
         CategoriaResponse nuevaCategoria =  categoriaService.guardar(request);
 
@@ -38,17 +40,20 @@ public class CategoriaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<List<CategoriaResponse>> listarTodos(){
         return ResponseEntity.ok(categoriaService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<CategoriaResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         return ResponseEntity.ok(categoriaService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<CategoriaResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id,
             @Valid @RequestBody CategoriaRequest categoria){
@@ -56,6 +61,7 @@ public class CategoriaController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<Void> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         categoriaService.eliminar(id);

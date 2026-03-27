@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class RecetaController {
     private final RecetaService recetaService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<List<RecetaResponse>> crear(@Valid @RequestBody RecetaRequest request) {
         List<RecetaResponse> creadas = recetaService.crear(request);
         Long productoId = creadas.isEmpty() ? request.getProductoId() : creadas.get(0).getProductoId();
@@ -29,6 +31,7 @@ public class RecetaController {
     }
 
     @PutMapping("/producto/{productoId}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<List<RecetaResponse>> actualizar(
             @PathVariable @Positive(message = "El productoId debe ser mayor a 0") Long productoId,
             @Valid @RequestBody RecetaRequest request) {
@@ -36,6 +39,7 @@ public class RecetaController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
     public ResponseEntity<List<RecetaResponse>> listarTodos() {
         return ResponseEntity.ok(recetaService.listarTodos());
     }

@@ -58,6 +58,11 @@ public class ComprobanteService {
         );
     }
 
+    public List<ComprobanteResponse> listarTodos(){
+        return comprobanteRepository.findAll().stream().map(comprobante -> new ComprobanteResponse(
+        )).toList();
+    }
+
     @Transactional
     public ComprobanteResponse asignarGrupoYMesasSiEsComer(AsignarMesasRequest request) {
 

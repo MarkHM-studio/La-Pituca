@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class TrabajadorController {
     private final TrabajadorService trabajadorService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TrabajadorResponse> crear(@Valid @RequestBody TrabajadorRequest request) {
         TrabajadorResponse trabajadorResponse = trabajadorService.guardar(request);
 
@@ -31,23 +33,27 @@ public class TrabajadorController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<TrabajadorResponse>> listarTodos() {
         return ResponseEntity.ok(trabajadorService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TrabajadorResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         return ResponseEntity.ok(trabajadorService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TrabajadorResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, TrabajadorRequest request) {
         return ResponseEntity.ok(trabajadorService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         trabajadorService.eliminar(id);

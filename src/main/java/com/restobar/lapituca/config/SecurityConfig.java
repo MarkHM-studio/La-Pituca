@@ -51,13 +51,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .authorizeHttpRequests(auth -> auth
+                        //PÚBLICOS
                         .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**", "/h2-console/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/distrito/**").permitAll()
-                        .requestMatchers("/api/usuario/**", "/api/trabajador/**").hasAnyRole("ADMINISTRADOR")
-                        .requestMatchers("/api/mercadopago/preferencias").hasAnyRole("CLIENTE")
+                        .requestMatchers(HttpMethod.GET, "/api/distrito/**").permitAll() //Incluye listarTodos(), obtenerPorId()
                         .requestMatchers("/api/mercadopago/webhook").permitAll()
-                        .requestMatchers("/api/reserva/**").hasAnyRole("CLIENTE")
 
+                        //PROTEGIDOS
+                        .requestMatchers("/api/**").authenticated()
                 )
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(user -> user.userService(customOAuth2UserService))

@@ -62,6 +62,7 @@ public class Transaccion {
     @ManyToOne
     @JoinColumn(name = "id_usuario")
     private Usuario usuario;
+
     //Transaccion-Reserva
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_reserva", nullable = false)

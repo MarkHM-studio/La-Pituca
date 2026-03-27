@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class RolController {
     private final RolService rolService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<RolResponse> crear(@Valid @RequestBody RolRequest request) {
         RolResponse rolResponse = rolService.guardar(request);
 
@@ -32,23 +34,27 @@ public class RolController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<RolResponse>> listarTodos() {
         return ResponseEntity.ok(rolService.listarTodos());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<RolResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         return ResponseEntity.ok(rolService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<RolResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, RolRequest request) {
         return ResponseEntity.ok(rolService.actualizar(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         rolService.eliminar(id);
