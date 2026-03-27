@@ -10,4 +10,5 @@ public interface TransaccionRepository extends JpaRepository<Transaccion, Long> 
     Optional<Transaccion> findByMercadoPagoPaymentId(String mercadoPagoPaymentId);
 
     Optional<Transaccion> findTopByExternalReferenceOrderByFechaActualizacionDesc(String externalReference);
+
 }
