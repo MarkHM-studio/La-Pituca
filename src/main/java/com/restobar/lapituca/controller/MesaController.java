@@ -59,7 +59,7 @@ public class MesaController {
     }
 
     @GetMapping("/ocupadas")
-    @PreAuthorize("hasRole('RECEPCIONISTA')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'RECEPCIONISTA', 'MOZO')")
     public ResponseEntity<List<MesasOcupadasResponse>> obtenerMesasOcupadas() {
         return ResponseEntity.ok(mesaService.obtenerMesasOcupadas());
     }

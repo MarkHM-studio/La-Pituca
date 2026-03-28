@@ -185,6 +185,11 @@ public class ReservaService {
     private ReservaResponse mapToResponse(Reserva reserva){
 
         Long grupoId = reserva.getGrupo() != null ? reserva.getGrupo().getId() : null;
+        List<Long> mesasIds = reserva.getGrupo() == null || reserva.getGrupo().getDetalleMesas() == null
+                ? List.of()
+                : reserva.getGrupo().getDetalleMesas().stream()
+                .map(detalle -> detalle.getMesa().getId())
+                .toList();
 
         List<Long> transaccionesIds = reserva.getTransacciones() == null
                 ? List.of()
@@ -207,6 +212,7 @@ public class ReservaService {
                 reserva.getEstado(),
                 reserva.getUsuario().getId(),
                 grupoId,
+                mesasIds,
                 ultimaTransaccionId,
                 transaccionesIds,
                 reserva.getFechaHora_registro()
@@ -239,32 +245,78 @@ public class ReservaService {
 
     }
 
-    /*
+
     public ReservaResponse actualizar(Long id, ReservaRequest request){
 
-@@ -234,56 +252,64 @@ public class ReservaService {
+        actualizarReservasExpiradas();
+
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Reserva no encontrada"));
+
+        if ("CANCELADO".equalsIgnoreCase(reserva.getEstado()) || "EXPIRADO".equalsIgnoreCase(reserva.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede actualizar una reserva cancelada o expirada");
         }
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
-                        "Usuario no encontrado"));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
 
-        Grupo grupo = null;
-
-        if(request.getGrupoId()!=null){
-            grupo = grupoRepository.findById(request.getGrupoId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
-                            "Grupo no encontrado"));
+        if(request.getFechaReserva().isAfter(LocalDate.now().plusDays(7))){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Solo se puede reservar hasta 1 semana en el futuro");
         }
+
+        LocalTime hora = request.getHoraReserva();
+        boolean horarioValido = !hora.isBefore(LocalTime.of(17,0)) || !hora.isAfter(LocalTime.of(2,0));
+        if(!horarioValido){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Horario fuera de atención (17:00 - 02:00)");
+        }
+
+        if(request.getFechaReserva().isEqual(LocalDate.now()) && request.getHoraReserva().isBefore(LocalTime.now())){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede reservar en una hora pasada");
+        }
+
+        if(request.getMesasId().size() != new HashSet<>(request.getMesasId()).size()){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Mesas duplicadas en la solicitud");
+        }
+
+        int capacidadMesas = request.getMesasId().size() * 3;
+        if(request.getNumPersonas() > capacidadMesas){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Una mesa admite máximo 3 personas. Seleccione más mesas");
+        }
+
+        List<Reserva> reservasSolapadas = reservaRepository.findReservasSolapadas(
+                request.getFechaReserva(),
+                request.getHoraReserva().minusHours(1),
+                request.getHoraReserva().plusHours(1),
+                request.getMesasId()
+        ).stream().filter(r -> !r.getId().equals(id)).toList();
+
+        if(!reservasSolapadas.isEmpty()){
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Una o más mesas ya están reservadas en ese horario");
+        }
+
+        List<Mesa> mesas = mesaRepository.findMesasForUpdate(request.getMesasId());
+        if(mesas.size() != request.getMesasId().size()){
+            throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Una o más mesas no existen");
+        }
+
+        Grupo grupo = reserva.getGrupo();
+        detalleMesaRepository.deleteAll(detalleMesaRepository.findByGrupo_Id(grupo.getId()));
+
+        List<DetalleMesa> nuevosDetalles = mesas.stream().map(mesa -> {
+            DetalleMesa detalle = new DetalleMesa();
+            detalle.setGrupo(grupo);
+            detalle.setMesa(mesa);
+            return detalle;
+        }).toList();
+        detalleMesaRepository.saveAll(nuevosDetalles);
 
         reserva.setFecha_reserva(request.getFechaReserva());
         reserva.setHora_reserva(request.getHoraReserva());
         reserva.setNum_personas(request.getNumPersonas());
         reserva.setUsuario(usuario);
-        reserva.setGrupo(grupo);
 
         return mapToResponse(reservaRepository.save(reserva));
-    }*/
+    }
 
     public List<ReservaResponse> listar(){
 
@@ -283,6 +335,30 @@ public class ReservaService {
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
                         "Reserva no encontrada"));
+
+        return mapToResponse(reserva);
+    }
+
+    public List<ReservaResponse> listarPorUsername(String username) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+
+        return reservaRepository.findAll().stream()
+                .filter(reserva -> reserva.getUsuario() != null && reserva.getUsuario().getId().equals(usuario.getId()))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public ReservaResponse obtenerPorIdParaUsername(Long id, String username) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Reserva no encontrada"));
+
+        if (reserva.getUsuario() == null || !reserva.getUsuario().getId().equals(usuario.getId())) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "No puedes acceder a una reserva de otro usuario");
+        }
 
         return mapToResponse(reserva);
     }

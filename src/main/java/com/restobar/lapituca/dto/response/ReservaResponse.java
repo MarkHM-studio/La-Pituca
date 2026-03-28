@@ -18,6 +18,7 @@ public class ReservaResponse {
 
     private Long usuarioId;
     private Long grupoId;
+    private List<Long> mesasIds;
     private Long ultimaTransaccionId;
     private List<Long> transaccionesIds;
 

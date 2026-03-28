@@ -52,11 +52,21 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .authorizeHttpRequests(auth -> auth
                         //PÚBLICOS
-                        .requestMatchers("/api/auth/**", "/oauth2/**", "/login/**", "/h2-console/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/forgot-password",
+                                "/api/auth/verify-reset-token",
+                                "/api/auth/reset-password",
+                                "/oauth2/**",
+                                "/login/**",
+                                "/h2-console/**"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/distrito/**").permitAll() //Incluye listarTodos(), obtenerPorId()
                         .requestMatchers("/api/mercadopago/webhook").permitAll()
 
                         //PROTEGIDOS
+                        .requestMatchers("/transacciones/**").authenticated()
                         .requestMatchers("/api/**").authenticated()
                 )
                 .oauth2Login(oauth -> oauth
