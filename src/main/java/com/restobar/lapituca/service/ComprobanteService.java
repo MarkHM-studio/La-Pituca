@@ -59,8 +59,21 @@ public class ComprobanteService {
     }
 
     public List<ComprobanteResponse> listarTodos(){
-        return comprobanteRepository.findAll().stream().map(comprobante -> new ComprobanteResponse(
-        )).toList();
+        return comprobanteRepository.findAll().stream()
+                .filter(c -> !"ELIMINADO".equalsIgnoreCase(c.getEstado()))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public ComprobanteResponse obtenerPorId(Long id) {
+        Comprobante comprobante = comprobanteRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + id + " no encontrado"));
+
+        if ("ELIMINADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + id + " no disponible");
+        }
+
+        return mapToResponse(comprobante);
     }
 
     @Transactional
@@ -170,7 +183,15 @@ public class ComprobanteService {
     }
 
     public void eliminar(Long id){
-        comprobanteRepository.deleteById(id);
+        Comprobante comprobante = comprobanteRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + id + " no encontrado"));
+
+        if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede eliminar lógicamente un comprobante pagado");
+        }
+
+        comprobante.setEstado("ELIMINADO");
+        comprobanteRepository.save(comprobante);
     }
 
     @Transactional
@@ -191,6 +212,9 @@ public class ComprobanteService {
 
         if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El Comprobante ya fue pagado");
+        }
+        if ("ELIMINADO".equalsIgnoreCase(comprobante.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede registrar la venta de un comprobante eliminado");
         }
 
         BigDecimal totalPagar = comprobante.getTotal();
@@ -227,6 +251,8 @@ public class ComprobanteService {
 
         BigDecimal vuelto = sumaPagos.subtract(totalPagar);
 
+        validarDocumentoComprobante(request);
+
         registrarMovimientos(
                 tiposPagoList,
                 montos,
@@ -242,6 +268,57 @@ public class ComprobanteService {
         }
 
         return "Pago realizado correctamente";
+    }
+    private void validarDocumentoComprobante(RegistrarVentaRequest request) {
+        String tipoComprobante = request.getTipoComprobante() == null ? "" : request.getTipoComprobante().trim().toUpperCase();
+
+        if (!tipoComprobante.equals("BOLETA") && !tipoComprobante.equals("FACTURA")) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El tipoComprobante debe ser BOLETA o FACTURA");
+        }
+
+        if ("BOLETA".equals(tipoComprobante)) {
+            if (request.getDni() == null || !request.getDni().matches("\\d{8}")) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Para BOLETA debe enviar un DNI válido de 8 dígitos");
+            }
+            if (request.getRuc() != null && !request.getRuc().isBlank()) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Para BOLETA no debe enviar RUC");
+            }
+            return;
+        }
+
+        if (request.getRuc() == null || !request.getRuc().matches("\\d{11}")) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Para FACTURA debe enviar un RUC válido de 11 dígitos");
+        }
+        if (request.getDni() != null && !request.getDni().isBlank()) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Para FACTURA no debe enviar DNI");
+        }
+    }
+
+    private ComprobanteResponse mapToResponse(Comprobante comprobante) {
+        Grupo grupo = comprobante.getGrupo();
+        GrupoResponse grupoResponse = null;
+
+        if (grupo != null) {
+            List<DetalleMesaResponse> detalles = detalleMesaRepository.findByGrupo_Id(grupo.getId())
+                    .stream()
+                    .map(detalleMesa -> new DetalleMesaResponse(
+                            detalleMesa.getId(),
+                            detalleMesa.getGrupo().getId(),
+                            detalleMesa.getMesa().getId()
+                    ))
+                    .toList();
+
+            grupoResponse = new GrupoResponse(grupo.getId(), grupo.getNombre(), detalles);
+        }
+
+        return new ComprobanteResponse(
+                comprobante.getId(),
+                comprobante.getTotal(),
+                comprobante.getIGV(),
+                comprobante.getFechaHora_venta(),
+                comprobante.getEstado(),
+                grupoResponse
+        );
     }
 
     private void registrarMovimientos(List<Long> tiposPago, List<BigDecimal> montos, Comprobante comprobante, Long tipoBilleteraVirtualId) {

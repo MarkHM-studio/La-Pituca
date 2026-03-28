@@ -39,6 +39,12 @@ public class ComprobanteController {
         return ResponseEntity.ok(comprobanteService.listarTodos());
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO', 'MOZO')")
+    public ResponseEntity<ComprobanteResponse> obtenerPorId(@PathVariable Long id){
+        return ResponseEntity.ok(comprobanteService.obtenerPorId(id));
+    }
+
     @PutMapping("/asignar-mesas")
     @PreAuthorize("hasRole('MOZO')")
     public ResponseEntity<ComprobanteResponse> asignarMesas(@Valid @RequestBody AsignarMesasRequest request){
@@ -54,7 +60,7 @@ public class ComprobanteController {
 
     @PostMapping("/registrar-venta")
     @PreAuthorize("hasRole('CAJERO')")
-    public ResponseEntity<String> registrarVenta(@RequestBody RegistrarVentaRequest request) {
+    public ResponseEntity<String> registrarVenta(@Valid @RequestBody RegistrarVentaRequest request) {
         return ResponseEntity.ok(comprobanteService.registrarVenta(request));
     }
 }

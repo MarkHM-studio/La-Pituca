@@ -48,6 +48,7 @@ public class MesaService {
     public List<MesaResponse> listarTodos(){
         return mesaRepository.findAll()
                 .stream()
+                .filter(mesa -> !"ELIMINADO".equalsIgnoreCase(mesa.getEstado()))
                 .map(mesa -> new MesaResponse(
                         mesa.getId(),
                         mesa.getNombre(),
@@ -91,7 +92,11 @@ public class MesaService {
 
     public void eliminar(Long id){
         Mesa mesa = mesaRepository.findById(id).orElseThrow(() ->new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Mesa con id: "+id+" no encontrada"));
-        mesaRepository.delete(mesa);
+        if ("OCUPADO".equalsIgnoreCase(mesa.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede eliminar una mesa ocupada");
+        }
+        mesa.setEstado("ELIMINADO");
+        mesaRepository.save(mesa);
     }
 
     public List<MesasOcupadasResponse> obtenerMesasOcupadas() {

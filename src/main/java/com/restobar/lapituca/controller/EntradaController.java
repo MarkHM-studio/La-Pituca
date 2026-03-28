@@ -34,4 +34,10 @@ public class EntradaController {
     public ResponseEntity<List<EntradaResponse>> listarTodos() {
         return ResponseEntity.ok(entradaService.listarTodos());
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ALMACENERO','ADMINISTRADOR')")
+    public ResponseEntity<EntradaResponse> actualizar(@PathVariable Long id, @Valid @RequestBody EntradaRequest request) {
+        return ResponseEntity.ok(entradaService.actualizar(id, request));
+    }
 }

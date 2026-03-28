@@ -75,6 +75,78 @@ public class EntradaService {
         return entradaRepository.findAll().stream().map(this::map).toList();
     }
 
+    @Transactional
+    public EntradaResponse actualizar(Long id, EntradaRequest request) {
+        validarSeleccion(request);
+
+        Entrada entrada = entradaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Entrada con id: " + id + " no encontrada"));
+
+        revertirImpactoInventario(entrada);
+
+        Proveedor proveedor = proveedorRepository.findById(request.getProveedorId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Proveedor con id: " + request.getProveedorId() + " no encontrado"));
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario con id: " + request.getUsuarioId() + " no encontrado"));
+
+        entrada.setCantidad_total(request.getCantidadTotal());
+        entrada.setUnidad_medida(normalize(request.getUnidadMedida()));
+        entrada.setCosto_unitario(request.getCostoUnitario());
+        entrada.setCosto_total(request.getCostoUnitario().multiply(request.getCantidadTotal()));
+        entrada.setProveedor(proveedor);
+        entrada.setUsuario(usuario);
+        entrada.setProducto(null);
+        entrada.setInsumo(null);
+
+        if (request.getProductoId() != null) {
+            Producto producto = productoRepository.findById(request.getProductoId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Producto con id: " + request.getProductoId() + " no encontrado"));
+
+            if (producto.getCategoria() != null && (producto.getCategoria().getId() == 1L || producto.getCategoria().getId() == 2L)) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se permiten entradas directas para productos de categoría 1 o 2");
+            }
+            if (!isUnits(request.getUnidadMedida())) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Para productos directos la unidad debe ser UNIDADES/UDS");
+            }
+            producto.setStock(producto.getStock() + request.getCantidadTotal().intValue());
+            productoRepository.save(producto);
+            entrada.setProducto(producto);
+        } else {
+            Insumo insumo = insumoRepository.findById(request.getInsumoId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Insumo con id: " + request.getInsumoId() + " no encontrado"));
+
+            BigDecimal incremento = convert(request.getCantidadTotal(), request.getUnidadMedida(), insumo.getUnidad_medida());
+            insumo.setStock(insumo.getStock().add(incremento));
+            insumoRepository.save(insumo);
+            entrada.setInsumo(insumo);
+        }
+
+        recalcularStockProductosPreparados();
+        return map(entradaRepository.save(entrada));
+    }
+
+    private void revertirImpactoInventario(Entrada entrada) {
+        if (entrada.getProducto() != null) {
+            Producto producto = entrada.getProducto();
+            int nuevoStock = producto.getStock() - entrada.getCantidad_total().intValue();
+            producto.setStock(Math.max(0, nuevoStock));
+            productoRepository.save(producto);
+            return;
+        }
+
+        if (entrada.getInsumo() != null) {
+            Insumo insumo = entrada.getInsumo();
+            BigDecimal decremento = convert(entrada.getCantidad_total(), entrada.getUnidad_medida(), insumo.getUnidad_medida());
+            BigDecimal nuevoStock = insumo.getStock().subtract(decremento);
+            if (nuevoStock.compareTo(BigDecimal.ZERO) < 0) {
+                throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No es posible actualizar la entrada porque dejaría stock negativo en insumo");
+            }
+            insumo.setStock(nuevoStock);
+            insumoRepository.save(insumo);
+        }
+    }
+
     private void recalcularStockProductosPreparados() {
         List<Producto> preparados = productoRepository.findByCategoria_IdIn(List.of(1L, 2L));
 

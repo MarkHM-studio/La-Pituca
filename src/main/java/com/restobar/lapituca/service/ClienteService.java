@@ -55,7 +55,10 @@ public class ClienteService {
     }
 
     public List<ClienteResponse> listarTodos(){
-        return clienteRepository.findAll().stream().map(this::toResponse).toList();
+        return clienteRepository.findAll().stream()
+                .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getEstado()))
+                .map(this::toResponse)
+                .toList();
     }
 
     public ClienteResponse obtenerPorId(Long id){
@@ -92,7 +95,8 @@ public class ClienteService {
 
     public void eliminar(Long id){
         Cliente cliente = clienteRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Cliente con id: " + id + " no encontrado"));
-        clienteRepository.delete(cliente);
+        cliente.setEstado("INACTIVO");
+        clienteRepository.save(cliente);
     }
 
     private ClienteResponse toResponse(Cliente cliente) {

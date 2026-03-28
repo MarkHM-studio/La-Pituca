@@ -76,28 +76,30 @@ public class TrabajadorService {
     }
 
     public List<TrabajadorResponse> listarTodos(){
-        return trabajadorRepository.findAll().stream().map(trabajador->new TrabajadorResponse(
-                trabajador.getId(),
-                trabajador.getNombre(),
-                trabajador.getApellido(),
-                trabajador.getDni(),
-                trabajador.getTelefono(),
-                trabajador.getCorreo(),
-                trabajador.getFecha_inicio(),
-                trabajador.getFecha_fin(),
-                trabajador.getEstado(),
-                trabajador.getFechaHora_registro(),
-                trabajador.getFechaHora_actualizacion(),
+        return trabajadorRepository.findAll().stream()
+                .filter(trabajador -> !"INACTIVO".equalsIgnoreCase(trabajador.getEstado()))
+                .map(trabajador->new TrabajadorResponse(
+                        trabajador.getId(),
+                        trabajador.getNombre(),
+                        trabajador.getApellido(),
+                        trabajador.getDni(),
+                        trabajador.getTelefono(),
+                        trabajador.getCorreo(),
+                        trabajador.getFecha_inicio(),
+                        trabajador.getFecha_fin(),
+                        trabajador.getEstado(),
+                        trabajador.getFechaHora_registro(),
+                        trabajador.getFechaHora_actualizacion(),
 
-                trabajador.getUsuario().getId(),
-                trabajador.getUsuario().getUsername(),
+                        trabajador.getUsuario().getId(),
+                        trabajador.getUsuario().getUsername(),
 
-                trabajador.getTurno().getId(),
-                trabajador.getTurno().getNombre(),
+                        trabajador.getTurno().getId(),
+                        trabajador.getTurno().getNombre(),
 
-                trabajador.getTipoJornada().getId(),
-                trabajador.getTipoJornada().getNombre()
-        )).toList();
+                        trabajador.getTipoJornada().getId(),
+                        trabajador.getTipoJornada().getNombre()
+                )).toList();
     }
 
     public TrabajadorResponse obtenerPorId(Long id){
@@ -181,7 +183,7 @@ public class TrabajadorService {
 
     public void eliminar(Long id){
         Trabajador trabajador = trabajadorRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Trabajador con id:"+id+" no encontrado"));
-
-        trabajadorRepository.delete(trabajador);
+        trabajador.setEstado("INACTIVO");
+        trabajadorRepository.save(trabajador);
     }
 }

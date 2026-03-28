@@ -44,7 +44,10 @@ public class UsuarioService {
     }
 
     public List<UsuarioResponse> listarTodos(){
-        return usuarioRepository.findAll().stream().map(this::toResponse).toList();
+        return usuarioRepository.findAll().stream()
+                .filter(u -> !"INACTIVO".equalsIgnoreCase(u.getEstado()))
+                .map(this::toResponse)
+                .toList();
     }
 
     public UsuarioResponse obtenerPorId(Long id){
@@ -76,7 +79,8 @@ public class UsuarioService {
 
     public void eliminar(Long id){
         Usuario usuario = usuarioRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: " + id + " no encontrada"));
-        usuarioRepository.delete(usuario);
+        usuario.setEstado("INACTIVO");
+        usuarioRepository.save(usuario);
     }
 
     private UsuarioResponse toResponse(Usuario usuario) {

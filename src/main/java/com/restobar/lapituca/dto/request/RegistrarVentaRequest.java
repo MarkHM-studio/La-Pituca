@@ -33,6 +33,15 @@ public class RegistrarVentaRequest {
 
     private Long tipoBilleteraVirtualId;
 
+    @NotBlank(message = "El tipo de comprobante es obligatorio")
+    private String tipoComprobante; // BOLETA o FACTURA
+
+    @Size(min = 8, max = 8, message = "El DNI debe tener 8 dígitos")
+    private String dni;
+
+    @Size(min = 11, max = 11, message = "El RUC debe tener 11 dígitos")
+    private String ruc;
+
     @NotNull(message = "La sucursal es obligatoria")
     private Long sucursalId;
 }

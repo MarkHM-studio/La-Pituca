@@ -1,9 +1,7 @@
 package com.restobar.lapituca.controller;
 
-import com.restobar.lapituca.dto.request.TransaccionRequest;
 import com.restobar.lapituca.dto.response.TransaccionResponse;
 import com.restobar.lapituca.service.TransaccionService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,5 +22,11 @@ public class TransaccionController {
     @PreAuthorize("hasAnyRole('RECEPCIONISTA', 'ADMINISTRADOR')")
     public ResponseEntity <List<TransaccionResponse>> listarTodos(){
         return ResponseEntity.ok(transaccionService.listarTodos());
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('RECEPCIONISTA', 'ADMINISTRADOR')")
+    public ResponseEntity<TransaccionResponse> obtenerPorId(@PathVariable Long id){
+        return ResponseEntity.ok(transaccionService.obtenerPorId(id));
     }
 }

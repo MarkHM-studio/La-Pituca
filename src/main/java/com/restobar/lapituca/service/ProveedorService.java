@@ -34,7 +34,10 @@ public class ProveedorService {
     }
 
     public List<ProveedorResponse> listarTodos() {
-        return proveedorRepository.findAll().stream().map(this::map).toList();
+        return proveedorRepository.findAll().stream()
+                .filter(p -> !"ELIMINADO".equalsIgnoreCase(p.getEstado()))
+                .map(this::map)
+                .toList();
     }
 
     public ProveedorResponse obtenerPorId(Long id) {
@@ -58,7 +61,8 @@ public class ProveedorService {
 
     public void eliminar(Long id) {
         Proveedor proveedor = buscarProveedor(id);
-        proveedorRepository.delete(proveedor);
+        proveedor.setEstado("ELIMINADO");
+        proveedorRepository.save(proveedor);
     }
 
     private Proveedor buscarProveedor(Long id) {
