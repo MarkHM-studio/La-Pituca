@@ -149,7 +149,7 @@ public class ReservaService {
         reserva.setGrupo(grupo);
         reserva.setEstado("ESPERANDO PAGO");
         reserva.setFechaHora_expiracionPago(
-                LocalDateTime.now().plusMinutes(60)
+                LocalDateTime.now().plusMinutes(10)
         );
 
         reservaRepository.save(reserva);
