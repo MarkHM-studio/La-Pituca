@@ -30,10 +30,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         );
 
         String password = usuario.getPassword() != null ? usuario.getPassword() : "{noop}oauth2_user";
+        boolean usuarioInactivo = "INACTIVO".equalsIgnoreCase(usuario.getEstado());
 
         return User.withUsername(usuario.getUsername())
                 .password(password)
                 .authorities(authorities)
+                .disabled(usuarioInactivo)
                 .build();
     }
 }

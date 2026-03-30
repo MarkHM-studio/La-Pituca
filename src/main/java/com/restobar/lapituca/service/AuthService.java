@@ -16,6 +16,7 @@ import com.restobar.lapituca.repository.UsuarioRepository;
 import com.restobar.lapituca.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -56,12 +57,15 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getCorreo(), request.getPassword())
             );
+        } catch (DisabledException ex) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Tu cuenta está inactiva. Contacta al administrador.");
         } catch (AuthenticationException ex) {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Correo o contraseña incorrectos");
         }
 
         Usuario usuario = usuarioRepository.findByUsername(normalizeEmail(request.getCorreo()))
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+        validarUsuarioActivo(usuario);
 
         usuario.setUltimoLogin(LocalDateTime.now());
         usuarioRepository.save(usuario);
@@ -203,6 +207,7 @@ public class AuthService {
         String emailNormalizado = normalizeEmail(email);
         Usuario usuario = usuarioRepository.findByUsername(emailNormalizado)
                 .orElseGet(() -> crearUsuarioGoogle(emailNormalizado, fullName, picture));
+        validarUsuarioActivo(usuario);
 
         usuario.setUltimoLogin(LocalDateTime.now());
         if (usuario.getFoto() == null && picture != null) {
@@ -242,6 +247,12 @@ public class AuthService {
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Esta cuenta fue creada con Google. Inicia sesión con Google.");
         }
         return usuario;
+    }
+
+    private void validarUsuarioActivo(Usuario usuario) {
+        if ("INACTIVO".equalsIgnoreCase(usuario.getEstado())) {
+            throw new ApiException(ErrorCode.UNAUTHORIZED, "Tu cuenta está inactiva. Contacta al administrador.");
+        }
     }
 
     private void assertValidResetToken(Usuario usuario, String rawToken) {
