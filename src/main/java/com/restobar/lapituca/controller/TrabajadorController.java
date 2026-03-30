@@ -27,15 +27,16 @@ public class TrabajadorController {
     public ResponseEntity<TrabajadorResponse> crear(@Valid @RequestBody TrabajadorRequest request) {
         TrabajadorResponse trabajadorResponse = trabajadorService.guardar(request);
 
-        URI location = URI.create("/api/trabajador" + trabajadorResponse.getId());
+        URI location = URI.create("/api/trabajador/" + trabajadorResponse.getId());
 
         return ResponseEntity.created(location).body(trabajadorResponse);
     }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<TrabajadorResponse>> listarTodos() {
-        return ResponseEntity.ok(trabajadorService.listarTodos());
+    public ResponseEntity<List<TrabajadorResponse>> listarTodos(
+            @RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(trabajadorService.listarTodos(estado));
     }
 
     @GetMapping("/{id}")
@@ -48,7 +49,7 @@ public class TrabajadorController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<TrabajadorResponse> actualizar(
-            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, TrabajadorRequest request) {
+            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id, @Valid @RequestBody TrabajadorRequest request) {
         return ResponseEntity.ok(trabajadorService.actualizar(id, request));
     }
 
@@ -57,6 +58,15 @@ public class TrabajadorController {
     public ResponseEntity<?> eliminar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         trabajadorService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/activar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> activar(
+            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
+
+        trabajadorService.activar(id);
         return ResponseEntity.noContent().build();
     }
 }

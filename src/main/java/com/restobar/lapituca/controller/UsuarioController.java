@@ -34,8 +34,9 @@ public class UsuarioController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<UsuarioResponse>> listarTodos(){
-        return ResponseEntity.ok(usuarioService.listarTodos());
+    public ResponseEntity<List<UsuarioResponse>> listarTodos(
+            @RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(usuarioService.listarTodos(estado));
     }
 
     @GetMapping("/{id}")
@@ -54,6 +55,14 @@ public class UsuarioController {
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
         usuarioService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/activar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> activar(
+            @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id){
+        usuarioService.activar(id);
         return ResponseEntity.noContent().build();
     }
 }

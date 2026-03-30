@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +23,7 @@ public class TrabajadorService {
 
     public TrabajadorResponse guardar(TrabajadorRequest request){
 
-        if (trabajadorRepository.existsByDni(request.getNombre())){
+        if (trabajadorRepository.existsByDni(request.getDni())){
             throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Ya existe un Trabajador con ese DNI");
         }
 
@@ -75,10 +76,16 @@ public class TrabajadorService {
         );
     }
 
-    public List<TrabajadorResponse> listarTodos(){
-        return trabajadorRepository.findAll().stream()
-                .filter(trabajador -> !"INACTIVO".equalsIgnoreCase(trabajador.getEstado()))
-                .map(trabajador->new TrabajadorResponse(
+    public List<TrabajadorResponse> listarTodos(String estado) {
+        Stream<Trabajador> stream = trabajadorRepository.findAll().stream();
+
+        if (estado != null && !estado.isBlank()) {
+            String estadoNormalizado = estado.trim().toUpperCase();
+            stream = stream.filter(t -> estadoNormalizado.equalsIgnoreCase(t.getEstado()));
+        }
+
+        return stream
+                .map(trabajador -> new TrabajadorResponse(
                         trabajador.getId(),
                         trabajador.getNombre(),
                         trabajador.getApellido(),
@@ -90,16 +97,14 @@ public class TrabajadorService {
                         trabajador.getEstado(),
                         trabajador.getFechaHora_registro(),
                         trabajador.getFechaHora_actualizacion(),
-
                         trabajador.getUsuario().getId(),
                         trabajador.getUsuario().getUsername(),
-
                         trabajador.getTurno().getId(),
                         trabajador.getTurno().getNombre(),
-
                         trabajador.getTipoJornada().getId(),
                         trabajador.getTipoJornada().getNombre()
-                )).toList();
+                ))
+                .toList();
     }
 
     public TrabajadorResponse obtenerPorId(Long id){
@@ -184,6 +189,21 @@ public class TrabajadorService {
     public void eliminar(Long id){
         Trabajador trabajador = trabajadorRepository.findById(id).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Trabajador con id:"+id+" no encontrado"));
         trabajador.setEstado("INACTIVO");
+        trabajadorRepository.save(trabajador);
+        Usuario usuario = usuarioRepository.findById(trabajador.getUsuario().getId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario con id:"+trabajador.getUsuario().getId()+" no encontrado"));
+        usuario.setEstado("INACTIVO");
+        usuarioRepository.save(usuario);
+    }
+
+    public void activar(Long id){
+        Trabajador trabajador = trabajadorRepository.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Trabajador con id:" + id + " no encontrado"
+                ));
+        trabajador.setEstado("ACTIVO");
+        Usuario usuario = trabajador.getUsuario();
+        usuario.setEstado("ACTIVO");
         trabajadorRepository.save(trabajador);
     }
 }

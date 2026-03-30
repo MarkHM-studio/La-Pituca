@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -54,9 +55,15 @@ public class ClienteService {
         return toResponse(clienteGuardado);
     }
 
-    public List<ClienteResponse> listarTodos(){
-        return clienteRepository.findAll().stream()
-                .filter(c -> !"INACTIVO".equalsIgnoreCase(c.getEstado()))
+    public List<ClienteResponse> listarTodos(String estado) {
+        Stream<Cliente> stream = clienteRepository.findAll().stream();
+
+        if (estado != null && !estado.isBlank()) {
+            String estadoNormalizado = estado.trim().toUpperCase();
+            stream = stream.filter(c -> estadoNormalizado.equalsIgnoreCase(c.getEstado()));
+        }
+
+        return stream
                 .map(this::toResponse)
                 .toList();
     }
@@ -96,6 +103,21 @@ public class ClienteService {
     public void eliminar(Long id){
         Cliente cliente = clienteRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Cliente con id: " + id + " no encontrado"));
         cliente.setEstado("INACTIVO");
+        clienteRepository.save(cliente);
+        Usuario usuario = usuarioRepository.findById(cliente.getUsuario().getId()).orElseThrow(()-> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario con id:"+cliente.getUsuario().getId()+" no encontrado"));
+        usuario.setEstado("INACTIVO");
+        usuarioRepository.save(usuario);
+    }
+
+    public void activar(Long id){
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.RESOURCE_NOT_FOUND,
+                        "Cliente con id: " + id + " no encontrado"
+                ));
+        cliente.setEstado("ACTIVO");
+        Usuario usuario = cliente.getUsuario();
+        usuario.setEstado("ACTIVO");
         clienteRepository.save(cliente);
     }
 

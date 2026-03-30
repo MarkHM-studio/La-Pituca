@@ -1,6 +1,7 @@
 package com.restobar.lapituca.repository;
 
 import com.restobar.lapituca.entity.Cliente;
+import com.restobar.lapituca.entity.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,4 +14,5 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
     boolean existsByTelefono(String telefono);
     boolean existsByTelefonoAndIdNot(String telefono, Long id);
     Optional<Cliente> findByCorreo(String correo);
+    Optional<Cliente> findByUsuario(Usuario usuario);
 }
