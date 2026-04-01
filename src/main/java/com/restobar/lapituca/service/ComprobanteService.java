@@ -52,6 +52,7 @@ public class ComprobanteService {
                 comprobante.getId(),
                 comprobante.getTotal(),
                 comprobante.getIGV(),
+                comprobante.getFechaHora_apertura(),
                 comprobante.getFechaHora_venta(),
                 comprobante.getEstado(),
                 null
@@ -176,6 +177,7 @@ public class ComprobanteService {
                 comprobante.getId(),
                 comprobante.getTotal(),
                 comprobante.getIGV(),
+                comprobante.getFechaHora_apertura(),
                 comprobante.getFechaHora_venta(),
                 comprobante.getEstado(),
                 grupoResponse
@@ -315,6 +317,7 @@ public class ComprobanteService {
                 comprobante.getId(),
                 comprobante.getTotal(),
                 comprobante.getIGV(),
+                comprobante.getFechaHora_apertura(),
                 comprobante.getFechaHora_venta(),
                 comprobante.getEstado(),
                 grupoResponse
@@ -442,90 +445,4 @@ public class ComprobanteService {
         }
         throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "Unidad incompatible para movimiento de insumo: " + source + " -> " + target);
     }
-
-
-    /*
-    @Transactional
-    public String registrarVenta(RegistrarVentaRequest request) {
-
-        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Usuario con id: "+request.getUsuarioId()+" no encontrado"));
-
-        Comprobante comprobante = comprobanteRepository.findById(request.getComprobanteId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,"Comprobante con id: "+request.getComprobanteId()+" no encontrado"));
-
-        if ("PAGADO".equalsIgnoreCase(comprobante.getEstado())) {
-            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "El comprobante ya fue pagado");
-        }
-
-        BigDecimal totalPagar = comprobante.getTotal();
-
-        Set<Long> tiposPago = request.getTipoPagoId();
-        List<BigDecimal> montos = request.getMontos();
-
-        if (tiposPago.size() != montos.size()) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR,"La cantidad de tipos de pago y montos no coincide");
-        }
-
-        List<Long> tiposPagoList = new ArrayList<>(tiposPago);
-
-        BigDecimal sumaPagos = montos.stream()
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        // CASO 1: SOLO EFECTIVO (id = 1)
-        if (tiposPagoList.size() == 1 && tiposPagoList.contains(1L)) {
-
-            BigDecimal montoRecibido = montos.get(0);
-
-            List<BigDecimal> montoPagado = Collections.singletonList(totalPagar);
-
-            if (montoRecibido.compareTo(totalPagar) < 0) {
-                BigDecimal falta = totalPagar.subtract(montoRecibido);
-                throw new ApiException(ErrorCode.VALIDATION_ERROR,"Falta pagar: " + falta);
-            }
-
-            BigDecimal vuelto = montoRecibido.subtract(totalPagar);
-
-            registrarMovimientos(tiposPagoList, montoPagado, comprobante, request.getTipoBilleteraVirtualId());
-
-            cerrarComprobante(comprobante, usuario);
-
-            return "Pago realizado correctamente. Vuelto: " + vuelto;
-        }
-
-        // CASO 2: SOLO BILLETERA (id = 2)
-        if (tiposPagoList.size() == 1 && tiposPagoList.contains(2L)) {
-
-            BigDecimal montoRecibido = montos.get(0);
-
-            if (montoRecibido.compareTo(totalPagar) != 0) {
-                throw new ApiException(ErrorCode.VALIDATION_ERROR,"El monto debe coincidir exactamente con el total: " + totalPagar);
-            }
-
-            registrarMovimientos(tiposPagoList, montos, comprobante, request.getTipoBilleteraVirtualId());
-
-            cerrarComprobante(comprobante, usuario);
-
-            return "Pago realizado correctamente";
-        }
-
-        // CASO 3: MIXTO
-        if (tiposPagoList.size() == 2) {
-
-            if (sumaPagos.compareTo(totalPagar) < 0) {
-                BigDecimal falta = totalPagar.subtract(sumaPagos);
-                throw new ApiException(ErrorCode.VALIDATION_ERROR,"Falta pagar: " + falta);
-            }
-
-            BigDecimal vuelto = sumaPagos.subtract(totalPagar);
-
-            registrarMovimientos(tiposPagoList, montos, comprobante, request.getTipoBilleteraVirtualId());
-
-            cerrarComprobante(comprobante, usuario);
-
-            return "Pago realizado correctamente. Vuelto: " + vuelto;
-        }
-
-        throw new ApiException(ErrorCode.VALIDATION_ERROR,"Tipo de pago no válido");
-    }*/
 }

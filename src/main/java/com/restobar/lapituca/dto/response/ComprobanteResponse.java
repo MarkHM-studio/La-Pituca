@@ -15,6 +15,7 @@ public class ComprobanteResponse {
     private Long id;
     private BigDecimal total;
     private BigDecimal IGV;
+    private LocalDateTime fechaHora_apertura;
     private LocalDateTime fechaHora_venta;
     private String estado;
     private GrupoResponse grupoResponse;

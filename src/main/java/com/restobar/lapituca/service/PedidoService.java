@@ -122,6 +122,7 @@ public class PedidoService {
                         pedido.getComprobante().getId(),
                         pedido.getComprobante().getTotal(),
                         pedido.getComprobante().getIGV(),
+                        pedido.getComprobante().getFechaHora_apertura(),
                         pedido.getComprobante().getFechaHora_venta(),
                         pedido.getComprobante().getEstado(),
                         grupoResponse
