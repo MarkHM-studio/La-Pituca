@@ -2,6 +2,7 @@ package com.restobar.lapituca.config;
 
 import com.restobar.lapituca.security.jwt.JwtAuthenticationFilter;
 import com.restobar.lapituca.security.oauth.CustomOAuth2UserService;
+import com.restobar.lapituca.security.oauth.OAuth2FailureHandler;
 import com.restobar.lapituca.security.oauth.OAuth2SuccessHandler;
 import com.restobar.lapituca.security.service.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,6 +39,7 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             CustomOAuth2UserService customOAuth2UserService,
             OAuth2SuccessHandler oAuth2SuccessHandler,
+            OAuth2FailureHandler oAuth2FailureHandler,
             DaoAuthenticationProvider authenticationProvider
     ) throws Exception {
         http
@@ -72,6 +74,7 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(user -> user.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

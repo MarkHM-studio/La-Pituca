@@ -53,9 +53,27 @@ public class AuthService {
     private String frontendResetPasswordUrl;
 
     public LoginResponse login(LoginRequest request) {
+        String correo = normalizeEmail(request.getCorreo());
+
+        Usuario usuario = usuarioRepository.findByUsername(correo).orElse(null);
+
+        if (usuario != null && "GOOGLE".equalsIgnoreCase(usuario.getProvider())) {
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "Esta cuenta fue creada con Google. Inicia sesión con Google."
+            );
+        }
+
+        if (usuario != null && "INACTIVO".equalsIgnoreCase(usuario.getEstado())) {
+            throw new ApiException(
+                    ErrorCode.UNAUTHORIZED,
+                    "Tu cuenta está inactiva. Contacta al administrador."
+            );
+        }
+
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getCorreo(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(correo, request.getPassword())
             );
         } catch (DisabledException ex) {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Tu cuenta está inactiva. Contacta al administrador.");
@@ -63,14 +81,14 @@ public class AuthService {
             throw new ApiException(ErrorCode.UNAUTHORIZED, "Correo o contraseña incorrectos");
         }
 
-        Usuario usuario = usuarioRepository.findByUsername(normalizeEmail(request.getCorreo()))
+        Usuario usuarioAuth = usuarioRepository.findByUsername(correo)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
-        validarUsuarioActivo(usuario);
 
-        usuario.setUltimoLogin(LocalDateTime.now());
-        usuarioRepository.save(usuario);
+        validarUsuarioActivo(usuarioAuth);
+        usuarioAuth.setUltimoLogin(LocalDateTime.now());
+        usuarioRepository.save(usuarioAuth);
 
-        return buildLoginResponse(usuario);
+        return buildLoginResponse(usuarioAuth);
     }
 
     @Transactional
