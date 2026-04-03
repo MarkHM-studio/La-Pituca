@@ -33,7 +33,7 @@ public class ProductoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ALMACENERO', 'MOZO')")
     public ResponseEntity<List<ProductoResponse>> listarTodos(){
         return ResponseEntity.ok(productoService.listarTodos());
     }

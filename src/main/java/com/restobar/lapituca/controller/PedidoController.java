@@ -91,7 +91,7 @@ public class PedidoController {
     }
 
     @PutMapping("/{id}/entregado")
-    @PreAuthorize("hasAnyRole('BARTENDER', 'COCINERO')")
+    @PreAuthorize("hasRole('MOZO')")
     public ResponseEntity<String> marcarComoEntregado(@PathVariable Long id) {
         pedidoService.marcarComoEntregado(id);
         return ResponseEntity.ok("Pedido marcado como 'ENTREGADO' correctamente");
