@@ -30,8 +30,8 @@ public class Insumo {
     @Column(nullable = false)
     private BigDecimal precio;
 
-    @Digits(integer = 10, fraction = 6)
-    @Column(nullable = false, precision = 16, scale = 6)
+    @Digits(integer = 16, fraction = 2)
+    @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal stock;
 
     @Size(min = 1, max = 25)
@@ -51,5 +51,10 @@ public class Insumo {
     @ManyToOne
     @JoinColumn(name = "id_marca")
     private Marca marca;
+
+    //Insumo-Categoria
+    @ManyToOne
+    @JoinColumn(name = "id_categoria", nullable = false)
+    private Categoria categoria;
 
 }

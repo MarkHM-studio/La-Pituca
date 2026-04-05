@@ -16,4 +16,5 @@ public class InsumoResponse {
     private BigDecimal stock;
     private String unidadMedida;
     private Long marcaId;
+    private Long categoriaId;
 }

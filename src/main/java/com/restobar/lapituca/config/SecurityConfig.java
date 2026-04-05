@@ -53,6 +53,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .authorizeHttpRequests(auth -> auth
+                        // PERMITIR PREFLIGHT
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         //PÚBLICOS
                         .requestMatchers(
                                 "/api/auth/login",
@@ -84,11 +87,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(frontendAllowedOrigin));
+
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:5173",
+                "https://front-ultimo-intento-kiwi.vercel.app",
+                "https://*.vercel.app"
+        ));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedHeaders(List.of("*")); // <- importante para ngrok-skip-browser-warning
         configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

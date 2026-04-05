@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -126,6 +128,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(code.getStatus())
                 .body(error);
+    }
+
+    @ExceptionHandler({
+            AccessDeniedException.class,
+            AuthorizationDeniedException.class
+    })
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            Exception ex,
+            HttpServletRequest request) {
+
+        ErrorCode code = ErrorCode.FORBIDDEN;
+
+        ErrorResponse error = new ErrorResponse(
+                code.getStatus().value(),
+                code.getStatus().getReasonPhrase(),
+                code.getDefaultMessage(),
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.status(code.getStatus()).body(error);
     }
 
     //Error general | Cualquier error no capturado anteriormente

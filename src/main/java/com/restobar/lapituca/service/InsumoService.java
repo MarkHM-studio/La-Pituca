@@ -2,10 +2,12 @@ package com.restobar.lapituca.service;
 
 import com.restobar.lapituca.dto.request.InsumoRequest;
 import com.restobar.lapituca.dto.response.InsumoResponse;
+import com.restobar.lapituca.entity.Categoria;
 import com.restobar.lapituca.entity.Insumo;
 import com.restobar.lapituca.entity.Marca;
 import com.restobar.lapituca.exception.ApiException;
 import com.restobar.lapituca.exception.ErrorCode;
+import com.restobar.lapituca.repository.CategoriaRepository;
 import com.restobar.lapituca.repository.InsumoRepository;
 import com.restobar.lapituca.repository.MarcaRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class InsumoService {
 
     private final InsumoRepository insumoRepository;
     private final MarcaRepository marcaRepository;
+    private final CategoriaRepository categoriaRepository;
 
     @Transactional
     public InsumoResponse crear(InsumoRequest request) {
@@ -34,6 +37,7 @@ public class InsumoService {
         insumo.setStock(BigDecimal.ZERO);
         insumo.setUnidad_medida(normalizeUnit(request.getUnidadMedida()));
         insumo.setMarca(findMarca(request.getMarcaId()));
+        insumo.setCategoria(findCategoria(request.getCategoriaId()));
 
         return map(insumoRepository.save(insumo));
     }
@@ -48,6 +52,7 @@ public class InsumoService {
         insumo.setNombre(request.getNombre());
         insumo.setPrecio(request.getPrecio());
         insumo.setMarca(findMarca(request.getMarcaId()));
+        insumo.setCategoria(findCategoria(request.getCategoriaId()));
 
         return map(insumoRepository.save(insumo));
     }
@@ -69,6 +74,7 @@ public class InsumoService {
         }
         insumo.setUnidad_medida(normalizeUnit(request.getUnidadMedida()));
         insumo.setMarca(findMarca(request.getMarcaId()));
+        insumo.setCategoria(findCategoria(request.getCategoriaId()));
 
         return map(insumoRepository.save(insumo));
     }
@@ -85,6 +91,15 @@ public class InsumoService {
     private Insumo findInsumo(Long id) {
         return insumoRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Insumo con id: " + id + " no encontrado"));
+    }
+
+
+    private Categoria findCategoria(Long categoriaId) {
+        if (categoriaId == null) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La categoría del insumo es obligatoria");
+        }
+        return categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Categoría con id: " + categoriaId + " no encontrada"));
     }
 
     private Marca findMarca(Long marcaId) {
@@ -106,7 +121,8 @@ public class InsumoService {
                 insumo.getPrecio(),
                 insumo.getStock(),
                 insumo.getUnidad_medida(),
-                insumo.getMarca() != null ? insumo.getMarca().getId() : null
+                insumo.getMarca() != null ? insumo.getMarca().getId() : null,
+                insumo.getCategoria() != null ? insumo.getCategoria().getId() : null
         );
     }
 }

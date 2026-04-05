@@ -27,4 +27,8 @@ public class InsumoRequest {
     private String unidadMedida;
 
     private Long marcaId;
+
+    @NotNull(message = "La categoría es obligatoria")
+    @Positive(message = "La categoría debe ser válida")
+    private Long categoriaId;
 }
