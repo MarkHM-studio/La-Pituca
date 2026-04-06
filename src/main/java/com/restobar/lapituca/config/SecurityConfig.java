@@ -91,7 +91,8 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "https://front-ultimo-intento-kiwi.vercel.app",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://front-ultimo-intento-kiwi-g8q3p08ob-markhm-studios-projects.vercel.app?_vercel_share=x9woISy86DX3VzoguFkHLQ97z4M1eAge"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
