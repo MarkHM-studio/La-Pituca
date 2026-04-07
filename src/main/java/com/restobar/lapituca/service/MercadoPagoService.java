@@ -125,14 +125,14 @@ public class MercadoPagoService {
 
         log.info("WEBHOOK RECIBIDO: {}", payload);
 
-        // 🔴 Desactivar validación temporalmente si estás probando
+        // Desactivar validación temporalmente si estás probando
         // if (!esWebhookValido(payload, xSignature, xRequestId)) {
         //     throw new ApiException(ErrorCode.FORBIDDEN, "Webhook inválido");
         // }
 
         String paymentId = null;
 
-        // ✅ FORMATO NUEVO
+        // FORMATO NUEVO
         if (payload.containsKey("type")) {
             String type = payload.get("type").toString();
 
@@ -142,7 +142,7 @@ public class MercadoPagoService {
             }
         }
 
-        // ✅ FORMATO ANTIGUO (topic/resource)
+        // FORMATO ANTIGUO (topic/resource)
         if (paymentId == null && payload.containsKey("topic")) {
             String topic = payload.get("topic").toString();
 
@@ -155,13 +155,13 @@ public class MercadoPagoService {
             }
         }
 
-        // ❌ Si no hay payment_id → ignorar
+        // Si no hay payment_id → ignorar
         if (paymentId == null) {
             log.info("Webhook ignorado: no se encontró payment_id");
             return;
         }
 
-        // 🚀 CONSULTAR PAGO REAL
+        //  CONSULTAR PAGO REAL
         try {
             Payment payment = new PaymentClient().get(Long.parseLong(paymentId));
             log.info("PAYMENT STATUS: {}", payment.getStatus());
@@ -181,13 +181,13 @@ public class MercadoPagoService {
                     "Pago sin external_reference, no se puede mapear reserva");
         }
 
-        // 🔍 Buscar transacción existente
+        //  Buscar transacción existente
         Transaccion transaccion = transaccionRepository
                 .findByMercadoPagoPaymentId(paymentId)
                 .orElseGet(() -> transaccionRepository
                         .findTopByExternalReferenceOrderByFechaActualizacionDesc(externalReference)
                         .orElseGet(() -> {
-                            // 🆕 Crear nueva si no existe
+                            //  Crear nueva si no existe
                             Reserva reserva = obtenerReservaPorExternalReference(externalReference);
 
                             Transaccion nueva = new Transaccion();
