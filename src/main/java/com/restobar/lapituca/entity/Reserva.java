@@ -16,7 +16,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Entity
-@Table(name = "reserva")
+@Table(name = "Reserva")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -42,6 +42,12 @@ public class Reserva {
     // ESPERANDO_PAGO, PAGADO, CANCELADO, EXPIRADO
 
     private LocalDateTime fechaHora_expiracionPago;
+
+    private LocalDateTime fechaHora_verificacionReserva;
+
+    @ManyToOne
+    @JoinColumn(name = "id_usuario_verificador")
+    private Usuario usuarioVerificador;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

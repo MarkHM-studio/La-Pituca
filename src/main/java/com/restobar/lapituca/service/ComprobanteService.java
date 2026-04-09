@@ -3,9 +3,7 @@ package com.restobar.lapituca.service;
 import com.restobar.lapituca.dto.request.AsignarMesasRequest;
 import com.restobar.lapituca.dto.request.ComprobanteRequest;
 import com.restobar.lapituca.dto.request.RegistrarVentaRequest;
-import com.restobar.lapituca.dto.response.ComprobanteResponse;
-import com.restobar.lapituca.dto.response.DetalleMesaResponse;
-import com.restobar.lapituca.dto.response.GrupoResponse;
+import com.restobar.lapituca.dto.response.*;
 import com.restobar.lapituca.entity.*;
 import com.restobar.lapituca.exception.*;
 import com.restobar.lapituca.repository.*;
@@ -33,6 +31,8 @@ public class ComprobanteService {
     private final MovimientoInsumoRepository movimientoInsumoRepository;
     private final RecetaRepository recetaRepository;
     private final SucursalRepository sucursalRepository;
+    private final ReservaRepository reservaRepository;
+    private final ClienteRepository clienteRepository;
 
 
     @Transactional
@@ -59,14 +59,14 @@ public class ComprobanteService {
         );
     }
 
-    public List<ComprobanteResponse> listarTodos(){
+    public List<ComprobanteListadoResponse> listarTodos(){
         return comprobanteRepository.findAll().stream()
                 .filter(c -> !"ELIMINADO".equalsIgnoreCase(c.getEstado()))
-                .map(this::mapToResponse)
+                .map(this::mapToListadoResponse)
                 .toList();
     }
 
-    public ComprobanteResponse obtenerPorId(Long id) {
+    public ComprobanteDetalleResponse obtenerDetallePorId(Long id) {
         Comprobante comprobante = comprobanteRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + id + " no encontrado"));
 
@@ -74,7 +74,7 @@ public class ComprobanteService {
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comprobante con id: " + id + " no disponible");
         }
 
-        return mapToResponse(comprobante);
+        return mapToDetalleResponse(comprobante);
     }
 
     @Transactional
@@ -296,31 +296,134 @@ public class ComprobanteService {
         }
     }
 
-    private ComprobanteResponse mapToResponse(Comprobante comprobante) {
-        Grupo grupo = comprobante.getGrupo();
-        GrupoResponse grupoResponse = null;
-
-        if (grupo != null) {
-            List<DetalleMesaResponse> detalles = detalleMesaRepository.findByGrupo_Id(grupo.getId())
-                    .stream()
-                    .map(detalleMesa -> new DetalleMesaResponse(
-                            detalleMesa.getId(),
-                            detalleMesa.getGrupo().getId(),
-                            detalleMesa.getMesa().getId()
-                    ))
-                    .toList();
-
-            grupoResponse = new GrupoResponse(grupo.getId(), grupo.getNombre(), detalles);
-        }
-
-        return new ComprobanteResponse(
+    private ComprobanteListadoResponse mapToListadoResponse(Comprobante comprobante) {
+        return new ComprobanteListadoResponse(
                 comprobante.getId(),
                 comprobante.getTotal(),
                 comprobante.getIGV(),
                 comprobante.getFechaHora_apertura(),
                 comprobante.getFechaHora_venta(),
                 comprobante.getEstado(),
-                grupoResponse
+                comprobante.getSucursal() != null ? comprobante.getSucursal().getId() : null,
+                comprobante.getUsuario() != null ? comprobante.getUsuario().getId() : null
+        );
+    }
+
+    private ComprobanteDetalleResponse mapToDetalleResponse(Comprobante comprobante) {
+        SucursalResumenResponse sucursal = null;
+        if (comprobante.getSucursal() != null) {
+            sucursal = new SucursalResumenResponse(
+                    comprobante.getSucursal().getId(),
+                    comprobante.getSucursal().getNombre(),
+                    comprobante.getSucursal().getDireccion(),
+                    comprobante.getSucursal().getRUC()
+            );
+        }
+
+        UsuarioResumenResponse cajero = null;
+        if (comprobante.getUsuario() != null) {
+            cajero = new UsuarioResumenResponse(
+                    comprobante.getUsuario().getId(),
+                    comprobante.getUsuario().getUsername(),
+                    comprobante.getUsuario().getRol() != null ? comprobante.getUsuario().getRol().getNombre() : null
+            );
+        }
+
+        Grupo grupo = comprobante.getGrupo();
+        GrupoDetalleResponse grupoResponse = null;
+
+        if (grupo != null) {
+            List<MesaAsignadaResponse> detalles = detalleMesaRepository.findByGrupo_Id(grupo.getId())
+                    .stream()
+                    .map(detalleMesa -> new MesaAsignadaResponse(
+                            detalleMesa.getId(),
+                            detalleMesa.getMesa().getId(),
+                            detalleMesa.getMesa().getNombre(),
+                            detalleMesa.getMesa().getEstado()
+                    ))
+                    .toList();
+
+            grupoResponse = new GrupoDetalleResponse(
+                    grupo.getId(),
+                    grupo.getNombre(),
+                    grupo.getEstado(),
+                    grupo.getTipoGrupo(),
+                    detalles
+            );
+        }
+
+        ReservaDetalleEnComprobanteResponse reservaResponse = null;
+        if (grupo != null) {
+            reservaResponse = reservaRepository.findByGrupo_Id(grupo.getId())
+                    .map(reserva -> {
+                        ClienteResumenResponse clienteResponse = null;
+                        if (reserva.getUsuario() != null) {
+                            clienteResponse = clienteRepository.findByUsuario(reserva.getUsuario())
+                                    .map(cliente -> new ClienteResumenResponse(
+                                            cliente.getId(),
+                                            cliente.getNombre() + " " + cliente.getApellido(),
+                                            cliente.getCorreo(),
+                                            cliente.getTelefono()
+                                    ))
+                                    .orElse(null);
+                        }
+                        return new ReservaDetalleEnComprobanteResponse(
+                                reserva.getId(),
+                                reserva.getFecha_reserva(),
+                                reserva.getHora_reserva(),
+                                reserva.getNum_personas(),
+                                reserva.getEstado(),
+                                reserva.getFechaHora_registro(),
+                                reserva.getFechaHora_verificacionReserva(),
+                                clienteResponse
+                        );
+                    })
+                    .orElse(null);
+        }
+
+        List<PedidoEnComprobanteResponse> pedidos = pedidoRepository.findByComprobante_Id(comprobante.getId())
+                .stream()
+                .map(pedido -> new PedidoEnComprobanteResponse(
+                        pedido.getId(),
+                        pedido.getCantidad(),
+                        pedido.getPrecio_unitario(),
+                        pedido.getSubtotal(),
+                        pedido.getEstado(),
+                        pedido.getProducto() != null ? pedido.getProducto().getId() : null,
+                        pedido.getProducto() != null ? pedido.getProducto().getNombre() : null,
+                        pedido.getTipoEntrega() != null ? pedido.getTipoEntrega().getId() : null,
+                        pedido.getTipoEntrega() != null ? pedido.getTipoEntrega().getNombre() : null,
+                        pedido.getUsuario() != null ? pedido.getUsuario().getId() : null,
+                        pedido.getUsuario() != null ? pedido.getUsuario().getUsername() : null
+                ))
+                .toList();
+
+        List<MovimientoTipoPagoDetalleResponse> movimientosTipoPago = movimientoTipoPagoRepository
+                .findByComprobante_Id(comprobante.getId()).stream()
+                .map(movimiento -> new MovimientoTipoPagoDetalleResponse(
+                        movimiento.getId(),
+                        movimiento.getMonto(),
+                        movimiento.getTipoPago() != null ? movimiento.getTipoPago().getId() : null,
+                        movimiento.getTipoPago() != null ? movimiento.getTipoPago().getNombre() : null,
+                        movimiento.getTipoBilleteraVirtual() != null ? movimiento.getTipoBilleteraVirtual().getId() : null,
+                        movimiento.getTipoBilleteraVirtual() != null ? movimiento.getTipoBilleteraVirtual().getNombre() : null
+                ))
+                .toList();
+
+        return new ComprobanteDetalleResponse(
+                comprobante.getId(),
+                comprobante.getTotal(),
+                comprobante.getIGV(),
+                comprobante.getSubtotal(),
+                comprobante.getFechaHora_apertura(),
+                comprobante.getFechaHora_venta(),
+                comprobante.getEstado(),
+                sucursal,
+                cajero,
+                grupoResponse,
+                reservaResponse,
+                pedidos,
+                movimientosTipoPago
         );
     }
 

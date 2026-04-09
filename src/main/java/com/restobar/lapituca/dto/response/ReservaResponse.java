@@ -23,4 +23,6 @@ public class ReservaResponse {
     private List<Long> transaccionesIds;
 
     private LocalDateTime fechaRegistro;
+    private LocalDateTime fechaVerificacionReserva;
+    private Long usuarioVerificadorId;
 }

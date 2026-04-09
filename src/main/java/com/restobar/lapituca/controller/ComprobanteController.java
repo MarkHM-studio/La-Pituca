@@ -2,6 +2,8 @@ package com.restobar.lapituca.controller;
 
 import com.restobar.lapituca.dto.request.AsignarMesasRequest;
 import com.restobar.lapituca.dto.request.ComprobanteRequest;
+import com.restobar.lapituca.dto.response.ComprobanteDetalleResponse;
+import com.restobar.lapituca.dto.response.ComprobanteListadoResponse;
 import com.restobar.lapituca.dto.response.ComprobanteResponse;
 import com.restobar.lapituca.dto.request.RegistrarVentaRequest;
 import com.restobar.lapituca.service.ComprobanteService;
@@ -35,14 +37,14 @@ public class ComprobanteController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO', 'MOZO')")
-    public ResponseEntity<List<ComprobanteResponse>> listarTodos(){
+    public ResponseEntity<List<ComprobanteListadoResponse>> listarTodos(){
         return ResponseEntity.ok(comprobanteService.listarTodos());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/detalle")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO', 'MOZO')")
-    public ResponseEntity<ComprobanteResponse> obtenerPorId(@PathVariable Long id){
-        return ResponseEntity.ok(comprobanteService.obtenerPorId(id));
+    public ResponseEntity<ComprobanteDetalleResponse> obtenerPorId(@PathVariable Long id){
+        return ResponseEntity.ok(comprobanteService.obtenerDetallePorId(id));
     }
 
     @PutMapping("/asignar-mesas")

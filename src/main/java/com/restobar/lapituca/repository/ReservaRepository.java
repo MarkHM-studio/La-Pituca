@@ -10,10 +10,13 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Long>{
+
+    Optional<Reserva> findByGrupo_Id(Long grupoId);
 
     @Query("""
            SELECT r
@@ -51,7 +54,7 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
         WHERE r.fecha_reserva = :fecha
         AND r.estado <> 'CANCELADO'
         AND r.estado <> 'EXPIRADO'
-        AND NOT (
+         AND NOT (
             r.estado = 'ESPERANDO PAGO'
             AND r.fechaHora_expiracionPago IS NOT NULL
             AND r.fechaHora_expiracionPago < CURRENT_TIMESTAMP
@@ -76,4 +79,15 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long>{
         AND r.fechaHora_expiracionPago < CURRENT_TIMESTAMP
     """)
     int marcarReservasExpiradas();
+
+    @Modifying
+    @Query("""
+        UPDATE Reserva r
+        SET r.estado = 'NO_SHOW'
+        WHERE r.estado = 'PAGADO'
+        AND r.fechaHora_verificacionReserva IS NULL
+        AND (r.fecha_reserva < CURRENT_DATE
+            OR (r.fecha_reserva = CURRENT_DATE AND r.hora_reserva < :horaLimite))
+    """)
+    int marcarReservasNoShow(@Param("horaLimite") LocalTime horaLimite);
 }

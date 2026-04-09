@@ -37,8 +37,7 @@ public class ReservaService {
 
     @Transactional
     public ReservaResponse crear(ReservaRequest request){
-
-        actualizarReservasExpiradas();
+        actualizarEstadosAutomaticos();
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
                 .orElseThrow(() -> new ApiException(
@@ -215,13 +214,14 @@ public class ReservaService {
                 mesasIds,
                 ultimaTransaccionId,
                 transaccionesIds,
-                reserva.getFechaHora_registro()
+                reserva.getFechaHora_registro(),
+                reserva.getFechaHora_verificacionReserva(),
+                reserva.getUsuarioVerificador() != null ? reserva.getUsuarioVerificador().getId() : null
         );
     }
 
     public List<MesasDisponiblesResponse> verMesasDisponibles(LocalDate fecha, LocalTime hora){
-
-        actualizarReservasExpiradas();
+        actualizarEstadosAutomaticos();
 
         LocalTime fin = hora.plusHours(1);
 
@@ -247,8 +247,7 @@ public class ReservaService {
 
 
     public ReservaResponse actualizar(Long id, ReservaRequest request){
-
-        actualizarReservasExpiradas();
+        actualizarEstadosAutomaticos();
 
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Reserva no encontrada"));
@@ -319,8 +318,7 @@ public class ReservaService {
     }
 
     public List<ReservaResponse> listar(){
-
-        actualizarReservasExpiradas();
+        actualizarEstadosAutomaticos();
 
         return reservaRepository.findAll()
                 .stream()
@@ -329,8 +327,7 @@ public class ReservaService {
     }
 
     public ReservaResponse obtenerPorId(Long id){
-
-        actualizarReservasExpiradas();
+        actualizarEstadosAutomaticos();
 
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
@@ -340,6 +337,8 @@ public class ReservaService {
     }
 
     public List<ReservaResponse> listarPorUsername(String username) {
+        actualizarEstadosAutomaticos();
+
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
 
@@ -350,6 +349,8 @@ public class ReservaService {
     }
 
     public ReservaResponse obtenerPorIdParaUsername(Long id, String username) {
+        actualizarEstadosAutomaticos();
+
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
 
@@ -363,19 +364,83 @@ public class ReservaService {
         return mapToResponse(reserva);
     }
 
-    public void cancelar(Long id){
+    public void cancelar(Long id, String username, boolean esCliente){
 
         Reserva reserva = reservaRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND,
                         "Reserva no encontrada"));
 
+        if (esCliente) {
+            if (reserva.getUsuario() == null || !username.equalsIgnoreCase(reserva.getUsuario().getUsername())) {
+                throw new ApiException(ErrorCode.FORBIDDEN, "No puedes cancelar la reserva de otro usuario");
+            }
+        }
+
+        if ("CANCELADO".equalsIgnoreCase(reserva.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La reserva ya está cancelada");
+        }
+
+        if ("NO_SHOW".equalsIgnoreCase(reserva.getEstado())) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "No se puede cancelar una reserva marcada como no_show");
+        }
+
         reserva.setEstado("CANCELADO");
+        reserva.setFechaHora_verificacionReserva(null);
+        reserva.setUsuarioVerificador(null);
 
         reservaRepository.save(reserva);
     }
 
+    public ReservaResponse verificarReserva(Long id, String username) {
+        actualizarEstadosAutomaticos();
+
+        Reserva reserva = reservaRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Reserva no encontrada"));
+
+        if (!"PAGADO".equalsIgnoreCase(reserva.getEstado())) {
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "Solo se pueden verificar reservas pagadas"
+            );
+        }
+
+        if (reserva.getFechaHora_verificacionReserva() != null) {
+            throw new ApiException(ErrorCode.BUSINESS_RULE_ERROR, "La reserva ya fue verificada");
+        }
+
+        LocalDateTime fechaHoraReserva = LocalDateTime.of(reserva.getFecha_reserva(), reserva.getHora_reserva());
+        LocalDateTime limiteTolerancia = fechaHoraReserva.plusMinutes(15);
+
+        if (LocalDateTime.now().isAfter(limiteTolerancia)) {
+            reserva.setEstado("NO_SHOW");
+            reservaRepository.save(reserva);
+            throw new ApiException(
+                    ErrorCode.BUSINESS_RULE_ERROR,
+                    "La reserva superó la tolerancia de 15 minutos y quedó como no_show"
+            );
+        }
+
+        Usuario recepcionista = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Usuario no encontrado"));
+
+        reserva.setFechaHora_verificacionReserva(LocalDateTime.now());
+        reserva.setUsuarioVerificador(recepcionista);
+
+        return mapToResponse(reservaRepository.save(reserva));
+    }
+
     private void actualizarReservasExpiradas() {
         reservaRepository.marcarReservasExpiradas();
+    }
+
+    private void actualizarReservasNoShow() {
+        LocalTime horaLimite = LocalTime.now().minusMinutes(15);
+        reservaRepository.marcarReservasNoShow(horaLimite);
+    }
+
+    private void actualizarEstadosAutomaticos() {
+        actualizarReservasExpiradas();
+        actualizarReservasNoShow();
     }
 
     /* Mejora para producción (muy recomendable) acelera findReservasSolapadas muchísimo cuando tengas muchas reservas.

@@ -80,11 +80,18 @@ public class ReservaController {
     }
 
     @PatchMapping("/{id}/cancelar")
-    @PreAuthorize("hasRole('CLIENTE')")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id){
-
-        reservaService.cancelar(id);
+    @PreAuthorize("hasAnyRole('CLIENTE', 'RECEPCIONISTA')")
+    public ResponseEntity<Void> cancelar(@PathVariable Long id, Authentication authentication){
+        boolean esCliente = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_CLIENTE".equals(a.getAuthority()));
+        reservaService.cancelar(id, authentication.getName(), esCliente);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/verificar")
+    @PreAuthorize("hasRole('RECEPCIONISTA')")
+    public ResponseEntity<ReservaResponse> verificarReserva(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(reservaService.verificarReserva(id, authentication.getName()));
     }
 }
