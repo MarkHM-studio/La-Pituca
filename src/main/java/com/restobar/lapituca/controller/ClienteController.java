@@ -34,21 +34,21 @@ public class ClienteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA','CLIENTE')")
     public ResponseEntity<List<ClienteResponse>> listarTodos(
             @RequestParam(required = false) String estado) {
         return ResponseEntity.ok(clienteService.listarTodos(estado));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA', 'CLIENTE')")
     public ResponseEntity<ClienteResponse> obtenerPorId(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id) {
         return ResponseEntity.ok(clienteService.obtenerPorId(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','CLIENTE')")
     public ResponseEntity<ClienteResponse> actualizar(
             @PathVariable @Positive(message = "El id debe ser mayor a 0") Long id,
             @Valid @RequestBody ClienteRequest request) {
