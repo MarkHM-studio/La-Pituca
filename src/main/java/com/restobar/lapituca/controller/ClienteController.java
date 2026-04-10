@@ -34,7 +34,7 @@ public class ClienteController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA','CLIENTE')")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR','RECEPCIONISTA')")
     public ResponseEntity<List<ClienteResponse>> listarTodos(
             @RequestParam(required = false) String estado) {
         return ResponseEntity.ok(clienteService.listarTodos(estado));
