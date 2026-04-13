@@ -47,10 +47,10 @@ public class AuthService {
     private final PasswordRecoveryEmailService passwordRecoveryEmailService;
 
     @Value("${app.auth.reset-password-expiration-minutes:30}")
-    private long resetPasswordExpirationMinutes;
+    long resetPasswordExpirationMinutes;
 
     @Value("${app.frontend.reset-password-url:http://localhost:5173/reset-password}")
-    private String frontendResetPasswordUrl;
+    String frontendResetPasswordUrl;
 
     public LoginResponse login(LoginRequest request) {
         String correo = normalizeEmail(request.getCorreo());

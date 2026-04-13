@@ -138,13 +138,14 @@ public class HorarioService {
         if (fin.isAfter(inicio)) {
             duracion = java.time.Duration.between(inicio, fin).toHours();
         } else {
-            duracion = java.time.Duration.between(inicio, fin.plusHours(24)).toHours();
+            duracion = java.time.Duration.between(inicio, LocalTime.MAX).toHours() + 1
+                    + java.time.Duration.between(LocalTime.MIN, fin).toHours();
         }
 
         if (duracion > 9) {
             throw new ApiException(
                     ErrorCode.BUSINESS_RULE_ERROR,
-                    "El horario no puede durar más de 16 horas"
+                    "El horario no puede durar más de 9 horas"
             );
         }
     }

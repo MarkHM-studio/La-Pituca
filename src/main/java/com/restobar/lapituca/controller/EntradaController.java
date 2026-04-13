@@ -1,6 +1,5 @@
 package com.restobar.lapituca.controller;
 
-
 import com.restobar.lapituca.dto.request.EntradaRequest;
 import com.restobar.lapituca.dto.response.EntradaResponse;
 import com.restobar.lapituca.service.EntradaService;

@@ -1,6 +1,5 @@
 package com.restobar.lapituca.controller;
 
-
 import com.restobar.lapituca.dto.request.RolRequest;
 import com.restobar.lapituca.dto.response.RolResponse;
 import com.restobar.lapituca.service.RolService;

@@ -46,7 +46,7 @@ public class ComprobanteService {
         comprobante.setEstado("ABIERTO");
         comprobante.setSucursal(sucursal);
 
-        comprobanteRepository.save(comprobante);
+        comprobante = comprobanteRepository.save(comprobante);
 
         return new ComprobanteResponse(
                 comprobante.getId(),

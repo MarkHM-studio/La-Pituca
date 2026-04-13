@@ -1,6 +1,7 @@
 package com.restobar.lapituca.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -19,9 +20,11 @@ public class PasswordRecoveryEmailService {
 
     private final JavaMailSender mailSender;
 
+    @Setter
     @Value("${app.mail.enabled:false}")
     private boolean mailEnabled;
 
+    @Setter
     @Value("${app.mail.from:no-reply@lapituca.com}")
     private String mailFrom;
 
