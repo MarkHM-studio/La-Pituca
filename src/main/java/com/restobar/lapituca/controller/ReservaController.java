@@ -46,7 +46,7 @@ public class ReservaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('CLIENTE', 'RECEPCIONISTA')")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'RECEPCIONISTA','ADMINISTRADOR')")
     public ResponseEntity<List<ReservaResponse>> listar(Authentication authentication){
         boolean esCliente = authentication.getAuthorities().stream()
                 .anyMatch(a -> "ROLE_CLIENTE".equals(a.getAuthority()));
